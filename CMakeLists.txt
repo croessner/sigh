@@ -20,10 +20,10 @@ find_library(libmilter_LIBRARIES milter)
 include_directories(${local_INCLUDE_DIR} ${Boost_INCLUDE_DIR})
 link_directories(${local_LIBRARY_DIR} ${Boost_LIBRARY_DIR})
 
-add_executable(mymilter ${SOURCE_FILES})
+add_executable(sigh ${SOURCE_FILES})
 
 target_compile_definitions(
-        mymilter PRIVATE
+        sigh PRIVATE
         _CB_ENVFROM
         _CB_HEADER
         _CB_EOH
@@ -31,7 +31,7 @@ target_compile_definitions(
         _CB_EOM
 )
 target_link_libraries (
-        mymilter
+        sigh
         ${CMAKE_THREAD_LIBS_INIT}
         ${libmilter_LIBRARIES}
         ${Boost_LIBRARIES}
