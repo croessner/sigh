@@ -1,0 +1,10 @@
+Build the binary like described in README.BUILD.
+
+Start the milter i.e.:
+
+./mymilter --debug
+
+See full list of options with:
+
+./mymilter -h
+

@@ -1,0 +1,11 @@
+To compile this project, do the following steps in the project root directory (not src):
+
+cmake .
+make
+
+To build documentation run:
+
+doxygen Doxyfile
+
+The result is created under the doc directory currently including HTML, LaTex and Manpages.
+
