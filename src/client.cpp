@@ -26,7 +26,7 @@ namespace mlt {
     // Public
 
     Client::Client(const std::string &hostname, struct sockaddr *hostaddr)
-            : content(nullptr),
+            : fcontent(nullptr),
               hostname(hostname),
               ip_and_port(Client::prepareIPandPort(hostaddr)),
               // Increase unique_id and initialize member id
@@ -61,14 +61,23 @@ namespace mlt {
         // Create a temporary file for the email content
         temp = boost::filesystem::unique_path("/tmp/%%%%-%%%%-%%%%-%%%%.eml");
         try {
-            content = fopen(temp.string().c_str(), "w+");
+            fcontent = fopen(temp.string().c_str(), "w+");
         }
         catch (const std::exception &e) {
-            content = nullptr;
+            fcontent = nullptr;
             std::cerr << "Error: " << e.what() << std::endl;
         }
 
-        return content != nullptr;
+        return fcontent != nullptr;
+    }
+
+    bool Client::openContentFileRO(void) {
+        if (fcontent != nullptr) {
+            fclose(fcontent);
+        }
+
+        content.open(temp.string());
+        return content.is_open();
     }
 
     // Private
@@ -106,8 +115,8 @@ namespace mlt {
     }
 
     void Client::cleanup(void) {
-        if (content != nullptr) {
-            fclose(content);
+        if (fcontent != nullptr) {
+            fclose(fcontent);
         }
 #if !defined _KEEP_TEMPFILES
         // Remove temporary file

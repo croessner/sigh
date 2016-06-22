@@ -52,11 +52,16 @@ namespace mlt {
          */
         bool createContentFile(void);
 
+        bool openContentFileRO(void);
+
         //! \brief SMTP session data map
         std::map<std::string, char *> session_data;
 
         //! \brief Email content gets stored in a temp file
-        FILE *content;
+        FILE *fcontent;
+
+        //! \brief Email content as ifstream opened read-only
+        std::ifstream content;
 
         //! \brief Hostname of a connected client
         const std::string hostname;
@@ -94,6 +99,8 @@ namespace mlt {
 
         //! \brief Name of a temporary file for email content
         fs::path temp;
+
+        std::ifstream tempfile;
     };
 }  // namespace mlt
 

@@ -30,6 +30,8 @@
 #include <boost/program_options.hpp>
 
 #include "config.h"
+#include "smime.h"
+#include "util.h"
 
 namespace fs = boost::filesystem;
 namespace po = boost::program_options;
@@ -38,7 +40,7 @@ namespace po = boost::program_options;
 bool debug = false;
 
 //! \brief The internal milter name
-static char *miltername = util::ccp("milter");
+static char *miltername = util::ccp("sigh");
 
 // Configuration iotions for the milter
 static std::unique_ptr<conf::MilterCfg> config(nullptr);
@@ -112,7 +114,6 @@ sfsistat mlfi_connect(SMFICTX *ctx, char *hostname, struct sockaddr *hostaddr) {
     assert(ctx != nullptr);
 
     mlt::Client *client;
-    char *symbol;
 
     try {
         client = new mlt::Client {hostname, hostaddr};
@@ -124,11 +125,6 @@ sfsistat mlfi_connect(SMFICTX *ctx, char *hostname, struct sockaddr *hostaddr) {
     catch (const std::exception &e) {
         std::cerr << "Error: " << e.what() << std::endl;
         return SMFIS_TEMPFAIL;
-    }
-
-    symbol = smfi_getsymval(ctx, util::ccp("{daemon_name}"));
-    if (symbol != nullptr) {
-        client->session_data["daemon_name"] = symbol;
     }
 
     // Store new client data
@@ -203,7 +199,8 @@ sfsistat mlfi_header(
     assert(ctx != nullptr);
 
     auto *client = util::mlfipriv(ctx);
-    if (fprintf(client->content, "%s: %s\r\n", header_key, header_value) <= 0) {
+    if (fprintf(
+            client->fcontent, "%s: %s\r\n", header_key, header_value) <= 0) {
         // Write failed
         return SMFIS_TEMPFAIL;
     }
@@ -220,7 +217,7 @@ sfsistat mlfi_eoh(SMFICTX *ctx) {
     assert(ctx != nullptr);
 
     auto *client = util::mlfipriv(ctx);
-    if (fprintf(client->content, "\r\n") <= 0) {
+    if (fprintf(client->fcontent, "\r\n") <= 0) {
         // Write failed
         return SMFIS_TEMPFAIL;
     }
@@ -240,7 +237,7 @@ sfsistat mlfi_body(SMFICTX *ctx, unsigned char *bodyp, size_t body_len) {
         return SMFIS_CONTINUE;
 
     auto *client = util::mlfipriv(ctx);
-    if (fwrite(bodyp, body_len, 1, client->content) <= 0) {
+    if (fwrite(bodyp, body_len, 1, client->fcontent) <= 0) {
         // Write failed
         return SMFIS_TEMPFAIL;
     }
@@ -257,14 +254,17 @@ sfsistat mlfi_eom(SMFICTX *ctx) {
     assert(ctx != nullptr);
 
     auto *client = util::mlfipriv(ctx);
-    char *session_data = nullptr;
 
-    session_data = client->session_data["daemon_name"];
-    if (session_data)
-        std::cout << "daemon_name=" << session_data << std::endl;
+    if (!client->openContentFileRO())
+        return SMFIS_TEMPFAIL;
+
+    smime::Smime smimeMsg {client->content, "unknown@example.com"};
+
+    if (::debug)
+        std::cout << smimeMsg;
 
     smfi_addheader(
-            ctx, util::ccp("X-Milter"), util::ccp("This is an added header"));
+            ctx, util::ccp("X-Sigh"), util::ccp("S/MIME signing milter"));
 
     return SMFIS_CONTINUE;
 }
@@ -412,7 +412,7 @@ int main(int argc, const char *argv[]) {
             ("group,g", po::value<std::string>(&mfgroup),
              "Drop privileges to this group")
             ("config,c", po::value<std::string>(&mfcfgfile)->default_value
-                    ("/etc/milter.cfg"), "Configuration file for this milter")
+                    ("/etc/sigh.cfg"), "Configuration file for this milter")
             ("debug", po::bool_switch()->default_value(false),
              "Turn on debugging output")
             ("pidfile,p", po::value<std::string>(&mfpidfile),
@@ -513,15 +513,13 @@ int main(int argc, const char *argv[]) {
 #endif  // !__APPLE__ && !defined _NOT_DAEMONIZE
 
     if (!mfpidfile.empty()) {
-        std::filebuf pidfilebuf;
-        pidfilebuf.open(mfpidfile, std::ios::out | std::ios::trunc);
-        if (pidfilebuf.is_open()) {
-            std::ostream out(&pidfilebuf);
+        std::ofstream out {mfpidfile};
+        if (out.is_open()) {
             out << getpid();
             if (::debug)
                 std::cout << "PID file created" << std::endl;
         }
-        pidfilebuf.close();
+        out.close();
     }
 
     // Workaround for stolen signals

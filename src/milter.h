@@ -15,26 +15,6 @@
 
 #include <string>
 
-#include "client.h"
-
-namespace util {
-    /*!
-     * \brief Shortcut for const char pointer
-     * \param x A string literal
-     * \return A pointer to char
-     */
-    static auto ccp = [](const std::string &str) {
-        return const_cast<char *> (str.c_str());
-    };
-
-    /*!
-     * \brief Data structure for each client connection
-     */
-    static auto mlfipriv = [](SMFICTX *ctx) {
-        return static_cast<mlt::Client *> (smfi_getpriv(ctx));
-    };
-}  // namespace util
-
 // Callbacks
 sfsistat mlfi_connect(SMFICTX *ctx, char *, struct sockaddr *);
 
