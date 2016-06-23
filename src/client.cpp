@@ -49,7 +49,7 @@ namespace mlt {
         }
     }
 
-    bool Client::createContentFile(void) {
+    bool Client::createContentFile(const std::string &tmpdir) {
         try {
             cleanup();
         }
@@ -58,8 +58,15 @@ namespace mlt {
             return false;
         }
 
+        if (!fs::exists(fs::path(tmpdir))
+            && !fs::is_directory(fs::path(tmpdir))) {
+            std::cerr << "Error: Can not access temporary directory"
+                      << std::endl;
+            return false;
+        }
+
         // Create a temporary file for the email content
-        temp = boost::filesystem::unique_path("/tmp/%%%%-%%%%-%%%%-%%%%.eml");
+        temp = fs::unique_path(tmpdir + "/%%%%-%%%%-%%%%-%%%%.eml");
         try {
             fcontent = fopen(temp.string().c_str(), "w+");
         }

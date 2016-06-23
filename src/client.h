@@ -50,7 +50,7 @@ namespace mlt {
          * gets created. If the file cannot be created, the internal pointer
          * is set to nullptr.
          */
-        bool createContentFile(void);
+        bool createContentFile(const std::string &);
 
         bool openContentFileRO(void);
 

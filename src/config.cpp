@@ -66,6 +66,20 @@ namespace conf {
             param["pidfile"] = defaults.pidfile;
         }
 
+        try {
+            param["mapfile"] = pt.get<std::string>("Milter.mapfile");
+        }
+        catch (...) {
+            param["mapfile"] = defaults.mapfile;
+        }
+
+        try {
+            param["tmpdir"] = pt.get<std::string>("Milter.tmpdir");
+        }
+        catch (...) {
+            param["tmpdir"] = defaults.tmpdir;
+        }
+
 #if !__APPLE__ && !defined _NOT_DAEMONIZE
         try {
             param["daemon"] = pt.get<bool>("Milter.daemon");
@@ -95,6 +109,12 @@ namespace conf {
                 << std::boolalpha << any_cast<bool>(param["daemon"])
                 << std::endl;
 #endif  // !__APPLE__ && !defined _NOT_DAEMONIZE
+            std::cout << "mapfile="
+                << any_cast<std::string>(param["mapfile"])
+                << std::endl;
+            std::cout << "tmpdir="
+                << any_cast<std::string>(param["tmpdir"])
+                << std::endl;
         }
     }
 }  // namespace conf

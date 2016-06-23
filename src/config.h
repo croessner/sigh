@@ -78,7 +78,25 @@ namespace conf {
             return any_cast<std::string>(param["pidfile"]);
         }
 
-#if !__APPLE__ && !defined _NOT_DAEMONIZE
+        /*!
+         * \brief Map file containing S/MIME certificates
+         *
+         * This file contains a mapping between email addresses and
+         * associated S/MIME certificates and keys.
+         */
+        inline std::string getMapFile(void) {
+            return any_cast<std::string>(param["mapfile"]);
+        }
+
+        /*!
+         * \brief Path to a temporary directory
+         *
+         */
+        inline std::string getTmpDir(void) {
+            return any_cast<std::string>(param["tmpdir"]);
+        }
+
+        #if !__APPLE__ && !defined _NOT_DAEMONIZE
         /*!
          * \brief Bring the milter to background
          *
@@ -115,6 +133,10 @@ namespace conf {
             //! \brief Run the milter as a daemon process
             bool daemon         = false;
 #endif  // !__APPLE__ && !defined _NOT_DAEMONIZE
+            //! \brief Location for the map file
+            std::string mapfile = std::string();
+            //! \brief Location for temporary files
+            std::string tmpdir = "/tmp";
         } defaults;
     };
 }  // namespace conf

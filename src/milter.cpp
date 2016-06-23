@@ -32,6 +32,7 @@
 #include "config.h"
 #include "smime.h"
 #include "util.h"
+#include "mapfile.h"
 
 namespace fs = boost::filesystem;
 namespace po = boost::program_options;
@@ -156,8 +157,10 @@ sfsistat mlfi_envfrom(SMFICTX *ctx, char **smtp_argv) {
     assert(ctx != nullptr);
 
     auto *client = util::mlfipriv(ctx);
-    if (!client->createContentFile())
+    if (!client->createContentFile(::config->getTmpDir()))
         return SMFIS_TEMPFAIL;
+
+    client->session_data["envfrom"] = smtp_argv[0];
 
     return SMFIS_CONTINUE;
 }
@@ -253,18 +256,32 @@ sfsistat mlfi_body(SMFICTX *ctx, unsigned char *bodyp, size_t body_len) {
 sfsistat mlfi_eom(SMFICTX *ctx) {
     assert(ctx != nullptr);
 
+    std::string mapfile = ::config->getMapFile();
+    if (mapfile.empty()) {
+        std::cerr << "Error: No map file defined" << std::endl;
+        return SMFIS_TEMPFAIL;
+    }
+
     auto *client = util::mlfipriv(ctx);
 
     if (!client->openContentFileRO())
         return SMFIS_TEMPFAIL;
 
-    smime::Smime smimeMsg {client->content, "unknown@example.com"};
+    smfi_addheader(
+            ctx, util::ccp("X-Sigh"), util::ccp("S/MIME signing milter"));
+
+    smime::Smime smimeMsg {client->content, client->session_data["envfrom"]};
+
+    smimeMsg.sign();
+    if (!smimeMsg.isSmimeSigned()) {
+        if (::debug)
+            std::cout << "Email was not signed" << std::endl;
+
+        return SMFIS_CONTINUE;
+    }
 
     if (::debug)
         std::cout << smimeMsg;
-
-    smfi_addheader(
-            ctx, util::ccp("X-Sigh"), util::ccp("S/MIME signing milter"));
 
     return SMFIS_CONTINUE;
 }
@@ -461,6 +478,8 @@ int main(int argc, const char *argv[]) {
     else
         mfdaemon = true;
 #endif  // !__APPLE__ && !defined _NOT_DAEMONIZE
+
+    mapfile::Map::readMap(::config->getMapFile());
 
     grp = getgrnam(mfgroup.c_str());
     if (grp) {

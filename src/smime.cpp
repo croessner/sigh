@@ -25,31 +25,54 @@ namespace smime {
         return out;
     }
 
-    Smime::Smime() : me(nullptr), loaded(false) { /* empty */ }
-
-    Smime::Smime(std::ifstream &msg, const std::string &mailfrom)
+    Smime::Smime(std::ifstream &msg, const std::string &envfrom)
             : me(std::make_shared<mimetic::MimeEntity>(msg)),
               loaded(true),
-              mailfrom(mailfrom) { /* empty */ }
-
-    void Smime::loadMimeEntity(
-            std::ifstream &msg, const std::string &mailfrom) {
-        if (!isLoaded()) {
-            me = std::make_shared<mimetic::MimeEntity>(msg);
-            this->mailfrom = mailfrom;
-            loaded = true;
-        }
-    }
+              smimesigned(false),
+              mailfrom([&]() -> decltype(mailfrom) {
+                  if (envfrom.front() == '<' && envfrom.back() == '>')
+                      return envfrom.substr(1, envfrom.size()-2);
+                  else
+                      return envfrom;
+              }()) { /* empty */ }
 
     void Smime::sign() {
-        if (isLoaded()) {
+        if (!isLoaded())
+            return;
 
-        }
+        // Null-mailer
+        if (mailfrom.empty())
+            return;
+
+        const mimetic::ContentType &ct = me->header().contentType();
+
+        // S/MIME and OpenPGP: multipart/signed
+        if (ct.isMultipart() && ct.subtype() == "signed")
+            return;
+
+        // OpenPGP: multipart/encrypted
+        if (ct.isMultipart() && ct.subtype() == "encrypted")
+            return;
+
+        // S/MIME: application/pkcs7-mime
+        if (ct.type() == "application" && ct.subtype() == "pkcs7-mime")
+            return;
+
+        /*
+         * TODO:
+         * Catch more cases, where an email already could have been encrypted
+         * or signed elsewhere.
+         */
+
+        // Load map and check, if we need to sign this email
+
+        smimesigned = true;
+        return;
     }
 
     const std::unique_ptr<std::string> Smime::toString(
             const std::shared_ptr<mimetic::MimeEntity> msg) const {
-        if (!isLoaded())
+        if (!isLoaded() || !smimesigned)
             return std::make_unique<std::string>("");
 
         /*
@@ -66,14 +89,14 @@ namespace smime {
 
         while (std::getline(src, s)) {
             if (!first_blank_line) {
-                if (s.at(0) == '\r' || s.empty()) {
+                if (s.empty() || s.front() == '\r') {
                     first_blank_line = true;
                     continue;
                 } else
                     continue;
             }
 
-            if (s.at(s.size() - 1) == '\r')
+            if (!s.empty() && s.back() == '\r')
                 dst += s + '\n';
             else
                 dst += s;
