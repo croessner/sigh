@@ -13,11 +13,16 @@
 
 #include <string>
 #include <map>
+#include <vector>
 
 extern bool debug;
 
 namespace mapfile {
     typedef std::map<std::string, std::string> certstore_t;
+
+    typedef std::vector<std::string> split_t;
+
+    enum class Smime {CERT, KEY};
 
     class Map {
     public:
@@ -27,20 +32,25 @@ namespace mapfile {
 
         static void readMap(const std::string&);
 
-        std::string getCert(const std::string &) const;
+        const std::string & getCert(void);
 
-        std::string getKey(const std::string &) const;
+        const std::string & getKey(void);
 
     private:
+        void setSmimeFiles(
+                const Smime &, const split_t &, const std::string &, size_t);
+
+        void getSmimeParts(const Smime &);
+
         static certstore_t certstore;
 
         static bool mapLoaded;
 
-        std::string mailfrom;
+        const std::string mailfrom;
 
-        std::string cert;
+        std::string smimecert;
 
-        std::string key;
+        std::string smimekey;
     };
 }  // namespace mapfile
 

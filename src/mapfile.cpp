@@ -12,13 +12,25 @@
 #include <iostream>
 #include <sstream>
 #include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include "mapfile.h"
 
 namespace fs = boost::filesystem;
 
 namespace mapfile {
-    Map::Map(const std::string &mailfrom) { }
+    static std::mutex conf_lock;
+
+    using boost::split;
+    using boost::is_any_of;
+    using boost::token_compress_on;
+
+    // Public
+
+    Map::Map(const std::string &envfrom)
+            : mailfrom(envfrom),
+              smimecert(std::string()),
+              smimekey(std::string()) { /* empty */ }
 
     void Map::readMap(const std::string &mapfile) {
         if (!fs::exists(fs::path(mapfile))
@@ -45,7 +57,10 @@ namespace mapfile {
                 if (::debug)
                     std::cout << "keycol=" << keycol
                               << " valuecol=" << valuecol << std::endl;
+
+                conf_lock.lock();
                 certstore[keycol] = valuecol;
+                conf_lock.unlock();
             }
 
             store.close();
@@ -57,9 +72,69 @@ namespace mapfile {
         }
     }
 
-    std::string Map::getCert(const std::string &mailfrom) const { }
+    const std::string & Map::getCert(void) {
+        if (mapLoaded && certstore.count(mailfrom) == 1)
+            getSmimeParts(Smime::CERT);
 
-    std::string Map::getKey(const std::string &mailfrom) const { }
+        return smimecert;
+    }
+
+    const std::string & Map::getKey(void) {
+        if (mapLoaded && certstore.count(mailfrom) == 1)
+            getSmimeParts(Smime::KEY);
+
+        return smimekey;
+    }
+
+    // Private
+
+    void Map::setSmimeFiles(
+            const Smime &component,
+            const split_t &source,
+            const std::string &what,
+            size_t pos = 0) {
+        split_t parts;
+        std::size_t found;
+
+        found = source.at(pos).find(what);
+        if (found != std::string::npos) {
+            split(parts, source.at(pos), is_any_of(":"), token_compress_on);
+            if (parts.size() != 2)
+                return;
+            switch (component) {
+                case Smime::CERT:
+                    smimecert = parts.at(1);
+                    break;
+                case Smime::KEY:
+                    smimekey = parts.at(1);
+                    break;
+            }
+        } else {
+            if (pos == 1)
+                return;
+            setSmimeFiles(component, source, what, ++pos);
+        }
+    }
+
+    void Map::getSmimeParts(const Smime &component) {
+        std::string raw = certstore[mailfrom];
+        split_t parts;
+
+        // Split the value in two pieces
+        split(parts, raw, is_any_of(","), token_compress_on);
+
+        if (parts.size() != 2)
+            return;
+
+        switch (component) {
+            case Smime::CERT:
+                setSmimeFiles(component, parts, "cert:");
+                break;
+            case Smime::KEY:
+                setSmimeFiles(component, parts, "key:");
+                break;
+        }
+    }
 
     certstore_t Map::certstore = {};
 

@@ -13,8 +13,12 @@
 #include <openssl/pem.h>
 #include <openssl/pkcs7.h>
 #include <openssl/err.h>
+#include <boost/filesystem.hpp>
 
 #include "util.h"
+#include "mapfile.h"
+
+namespace fs = boost::filesystem;
 
 namespace smime {
     // Public
@@ -64,7 +68,15 @@ namespace smime {
          * or signed elsewhere.
          */
 
-        // Load map and check, if we need to sign this email
+        mapfile::Map email {mailfrom};
+
+        auto cert = fs::path(email.getCert());
+        auto key = fs::path(email.getKey());
+
+        if (!fs::exists(cert) && !fs::is_regular(cert))
+            return;
+        if (!fs::exists(key) && !fs::is_regular(key))
+            return;
 
         smimesigned = true;
         return;

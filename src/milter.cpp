@@ -160,7 +160,14 @@ sfsistat mlfi_envfrom(SMFICTX *ctx, char **smtp_argv) {
     if (!client->createContentFile(::config->getTmpDir()))
         return SMFIS_TEMPFAIL;
 
-    client->session_data["envfrom"] = smtp_argv[0];
+    // Copy envelope sender address
+    char *mailfrom = strdup(smtp_argv[0]);
+    if (mailfrom == nullptr) {
+        perror("Error: Unable to copy envfrom address");
+        return SMFIS_TEMPFAIL;
+    }
+
+    client->session_data["envfrom"] = mailfrom;
 
     return SMFIS_CONTINUE;
 }
@@ -280,8 +287,8 @@ sfsistat mlfi_eom(SMFICTX *ctx) {
         return SMFIS_CONTINUE;
     }
 
-    if (::debug)
-        std::cout << smimeMsg;
+    //if (::debug)
+    //    std::cout << smimeMsg;
 
     return SMFIS_CONTINUE;
 }
@@ -383,6 +390,11 @@ static void signalHandler(int sig) {
             std::cerr << "Segmentation fault occurred. Aborting now"
                       << std::endl;
             exit(EX_SOFTWARE);
+        case SIGHUP:
+            std::cerr << "Caught signal " << sig
+                      << ". Reloading mapfile" << std::endl;
+            mapfile::Map::readMap(::config->getMapFile());
+            break;
         default:
         { /* empty */ }
     }
@@ -411,11 +423,11 @@ int main(int argc, const char *argv[]) {
         perror("Installing SIGSEGV failed");
     if (signal(SIGQUIT, signalHandler) == SIG_ERR)
         perror("Installing SIGQUIT failed");
+    if (signal(SIGHUP, signalHandler) == SIG_ERR)
+        perror("Installing SIGHUP failed");
 
     if (signal(SIGABRT, SIG_IGN) == SIG_ERR)
         perror("Installing SIGABRT failed");
-    if (signal(SIGHUP, SIG_IGN) == SIG_ERR)
-        perror("Installing SIGHUP failed");
 
     // Parse command line arguments
     po::options_description desc("The following options are available");
