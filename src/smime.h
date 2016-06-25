@@ -14,6 +14,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <memory>
 #include <mimetic/mimetic.h>
 #include <libmilter/mfapi.h>
 

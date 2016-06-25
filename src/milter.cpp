@@ -318,6 +318,7 @@ sfsistat mlfi_close(SMFICTX *ctx) {
     }
 
     delete client;
+    smfi_setpriv(ctx, nullptr);
 
     return SMFIS_ACCEPT;
 }

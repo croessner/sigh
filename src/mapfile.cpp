@@ -11,6 +11,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <mutex>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 

@@ -16,6 +16,8 @@
 #include <string>
 #include <map>
 #include <cstdio>
+#include <fstream>
+#include <memory>
 
 #include <boost/filesystem.hpp>
 

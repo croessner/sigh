@@ -81,6 +81,7 @@ namespace mlt {
     bool Client::openContentFileRO(void) {
         if (fcontent != nullptr) {
             fclose(fcontent);
+            fcontent = nullptr;
         }
 
         content.open(temp.string());
@@ -124,6 +125,7 @@ namespace mlt {
     void Client::cleanup(void) {
         if (fcontent != nullptr) {
             fclose(fcontent);
+            fcontent = nullptr;
         }
 #if !defined _KEEP_TEMPFILES
         // Remove temporary file
