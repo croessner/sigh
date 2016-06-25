@@ -20,6 +20,7 @@
 #include <sysexits.h>
 #include <pwd.h>    // uid
 #include <grp.h>    // gid
+#include <syslog.h>
 
 #include <iostream>
 #include <string>
@@ -41,10 +42,14 @@ namespace po = boost::program_options;
 bool debug = false;
 
 //! \brief The internal milter name
-static char *miltername = util::ccp("sigh");
+static char miltername[] = "sigh";
+
+//! \brief Version numer
+static const char version[] = "1606.1.0";
 
 // Configuration iotions for the milter
 static std::unique_ptr<conf::MilterCfg> config(nullptr);
+
 
 /*!
  * \brief Global data structure that maps all callbacks
@@ -285,6 +290,10 @@ sfsistat mlfi_eom(SMFICTX *ctx) {
             std::cout << "Email was not signed" << std::endl;
 
         return SMFIS_CONTINUE;
+    } else {
+        std::string logmsg = "Signed mail for email address "
+                             + std::string(client->session_data["envfrom"]);
+        syslog(LOG_NOTICE, "%s", logmsg.c_str());
     }
 
     //if (::debug)
@@ -395,6 +404,7 @@ static void signalHandler(int sig) {
             std::cout << "Caught signal " << sig
                       << ". Reloading mapfile" << std::endl;
             mapfile::Map::readMap(::config->getMapFile());
+            syslog(LOG_NOTICE, "%s", std::string("Mapfile reloaded").c_str());
             break;
         default:
         { /* empty */ }
@@ -563,6 +573,14 @@ int main(int argc, const char *argv[]) {
         catch (...) { /* empty */ }
     }};
 
+    openlog(miltername, LOG_CONS | LOG_NDELAY | LOG_PID, LOG_MAIL);
+
+    std::string logmsg = "Starting milter "
+                         + std::string(miltername)
+                         + " - version "
+                         + std::string(version);
+    syslog(LOG_NOTICE, "%s", logmsg.c_str());
+
     // Wait for signals
     milter.join();
 
@@ -580,6 +598,11 @@ int main(int argc, const char *argv[]) {
             exit(EX_OSERR);
         }
     }
+
+    logmsg = "Milter stopped";
+    syslog(LOG_NOTICE, "%s", logmsg.c_str());
+
+    closelog();
 
     return EX_OK;
 }

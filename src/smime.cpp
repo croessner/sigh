@@ -13,6 +13,7 @@
 #include <openssl/pem.h>
 #include <openssl/pkcs7.h>
 #include <openssl/err.h>
+#include <syslog.h>
 #include <boost/filesystem.hpp>
 
 #include "util.h"
@@ -50,17 +51,25 @@ namespace smime {
 
         const mimetic::ContentType &ct = me->header().contentType();
 
+        bool signedOrEncrypted = false;
+
         // S/MIME and OpenPGP: multipart/signed
         if (ct.isMultipart() && ct.subtype() == "signed")
-            return;
+            signedOrEncrypted = true;
 
         // OpenPGP: multipart/encrypted
         if (ct.isMultipart() && ct.subtype() == "encrypted")
-            return;
+            signedOrEncrypted = true;
 
         // S/MIME: application/pkcs7-mime
         if (ct.type() == "application" && ct.subtype() == "pkcs7-mime")
+            signedOrEncrypted = true;
+
+        if (signedOrEncrypted) {
+            const char logmsg[] = "Message already signed or encrypted";
+            syslog(LOG_NOTICE, "%s", logmsg);
             return;
+        }
 
         /*
          * TODO:
@@ -79,7 +88,6 @@ namespace smime {
             return;
 
         smimesigned = true;
-        return;
     }
 
     const std::unique_ptr<std::string> Smime::toString(
