@@ -210,8 +210,8 @@ sfsistat mlfi_header(
 
     auto *client = util::mlfipriv(ctx);
     if (fprintf(
-            client->fcontent, "%s: %s\r\n", header_key, header_value) <= 0) {
-        // Write failed
+            client->fcontent, "%s: %s\r\n", header_key, header_value) < 0) {
+        std::cerr << "Error: Unable to write header" << std::endl;
         return SMFIS_TEMPFAIL;
     }
 
@@ -228,7 +228,7 @@ sfsistat mlfi_eoh(SMFICTX *ctx) {
 
     auto *client = util::mlfipriv(ctx);
     if (fprintf(client->fcontent, "\r\n") <= 0) {
-        // Write failed
+        std::cerr << "Error: Unable to write end of header" << std::endl;
         return SMFIS_TEMPFAIL;
     }
 
@@ -248,7 +248,7 @@ sfsistat mlfi_body(SMFICTX *ctx, unsigned char *bodyp, size_t body_len) {
 
     auto *client = util::mlfipriv(ctx);
     if (fwrite(bodyp, body_len, 1, client->fcontent) <= 0) {
-        // Write failed
+        std::cerr << "Error: Unable to write body" << std::endl;
         return SMFIS_TEMPFAIL;
     }
 
@@ -357,12 +357,12 @@ sfsistat mlfi_negotiate(
  */
 static void initMilter(const std::string &con) {
     if (smfi_setconn(const_cast<char *> (con.c_str())) == MI_FAILURE) {
-        std::cerr << "smfi_setconn failed" << std::endl;
+        std::cerr << "Error: smfi_setconn() failed" << std::endl;
         exit(EX_UNAVAILABLE);
     }
 
     if (smfi_register(smfilter) == MI_FAILURE) {
-        std::cerr << "smfi_register failed" << std::endl;
+        std::cerr << "Error: smfi_register() failed" << std::endl;
         exit(EX_UNAVAILABLE);
     }
 }
@@ -388,11 +388,11 @@ static void signalHandler(int sig) {
             }
             break;
         case SIGSEGV:
-            std::cerr << "Segmentation fault occurred. Aborting now"
+            std::cerr << "Error: Segmentation fault occurred. Aborting now"
                       << std::endl;
             exit(EX_SOFTWARE);
         case SIGHUP:
-            std::cerr << "Caught signal " << sig
+            std::cout << "Caught signal " << sig
                       << ". Reloading mapfile" << std::endl;
             mapfile::Map::readMap(::config->getMapFile());
             break;
@@ -417,18 +417,18 @@ int main(int argc, const char *argv[]) {
     struct group *grp;
 
     if (signal(SIGINT, signalHandler) == SIG_ERR)
-        perror("Installing SIGINT failed");
+        perror("Error: Installing SIGINT failed");
     if (signal(SIGTERM, signalHandler) == SIG_ERR)
-        perror("Installing SIGTERM failed");
+        perror("Error: Installing SIGTERM failed");
     if (signal(SIGSEGV, signalHandler) == SIG_ERR)
-        perror("Installing SIGSEGV failed");
+        perror("Error: Installing SIGSEGV failed");
     if (signal(SIGQUIT, signalHandler) == SIG_ERR)
-        perror("Installing SIGQUIT failed");
+        perror("Error: Installing SIGQUIT failed");
     if (signal(SIGHUP, signalHandler) == SIG_ERR)
-        perror("Installing SIGHUP failed");
+        perror("Error: Installing SIGHUP failed");
 
     if (signal(SIGABRT, SIG_IGN) == SIG_ERR)
-        perror("Installing SIGABRT failed");
+        perror("Error: Installing SIGABRT failed");
 
     // Parse command line arguments
     po::options_description desc("The following options are available");
@@ -459,7 +459,7 @@ int main(int argc, const char *argv[]) {
         po::store(po::parse_command_line(argc, argv, desc), vm);
     }
     catch (const std::exception &e) {
-        std::cerr << e.what() << std::endl;
+        std::cerr << "Error: " << e.what() << std::endl;
         std::cout << desc << std::endl;
         exit(EX_USAGE);
     }
@@ -499,7 +499,7 @@ int main(int argc, const char *argv[]) {
         gid = grp->gr_gid;
         if (getuid() == 0) {
             if (initgroups(mfuser.c_str(), gid) != 0) {
-                perror("Unable to initialize group access list");
+                perror("Error: Unable to initialize group access list");
                 exit(EX_OSERR);
             }
             if (::debug)
@@ -509,26 +509,26 @@ int main(int argc, const char *argv[]) {
                                  "list" << std::endl;
         }
         if (setgid(gid) != 0) {
-            perror("Unable to switch group");
+            perror("Error: Unable to switch group");
             exit(EX_OSERR);
         }
         if (::debug)
             std::cout << "Switched to group " << mfgroup << std::endl;
     } else {
-        std::cerr << "Unknown group " << mfgroup << std::endl;
+        std::cerr << "Error: Unknown group " << mfgroup << std::endl;
         exit(EX_NOUSER);
     }
     pwd = getpwnam(mfuser.c_str());
     if (pwd) {
         uid = pwd->pw_uid;
         if (setuid(uid) != 0) {
-            perror("Unable to switch user");
+            perror("Error: Unable to switch user");
             exit(EX_OSERR);
         }
         if (::debug)
             std::cout << "Switched to user " << mfuser << std::endl;
     } else {
-        std::cerr << "Unknown user " << mfuser << std::endl;
+        std::cerr << "Error: Unknown user " << mfuser << std::endl;
         exit(EX_NOUSER);
     }
 
@@ -538,7 +538,7 @@ int main(int argc, const char *argv[]) {
     // daemon() is deprecated on OS X 10.5 and newer
     if (mfdaemon) {
         if (daemon(0, 0) != 0) {
-            perror("Could not daemonize!");
+            perror("Error: Could not daemonize!");
             exit(EX_OSERR);
         }
     }
@@ -550,7 +550,8 @@ int main(int argc, const char *argv[]) {
             out << getpid();
             if (::debug)
                 std::cout << "PID file created" << std::endl;
-        }
+        } else
+            std::cerr << "Error: Unable to create PID file" << std::endl;
         out.close();
     }
 
@@ -568,10 +569,11 @@ int main(int argc, const char *argv[]) {
     if (!mfpidfile.empty()) {
         try {
             if (fs::exists(fs::path(mfpidfile))
-                && fs::is_regular(fs::path(mfpidfile)))
+                && fs::is_regular(fs::path(mfpidfile))) {
                 fs::remove(mfpidfile);
-            if (::debug)
-                std::cout << "PID file removed" << std::endl;
+                if (::debug)
+                    std::cout << "PID file removed" << std::endl;
+            }
         }
         catch (const std::exception &e) {
             std::cerr << "Error: " << e.what()  << std::endl;
