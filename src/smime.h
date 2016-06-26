@@ -29,7 +29,7 @@ namespace smime {
 
         inline bool isLoaded(void) const { return loaded; }
 
-        inline bool isSmimeSigned(void) const { return smimesigned; }
+        inline bool isSmimeSigned(void) const { return smimeSigned; }
 
         const std::unique_ptr<std::string> toString(
                 const std::shared_ptr<mimetic::MimeEntity>) const;
@@ -43,9 +43,9 @@ namespace smime {
 
         bool loaded;
 
-        bool smimesigned;
+        bool smimeSigned;
 
-        std::string mailfrom;
+        std::string mailFrom;
     };
 }  // namespace smime
 

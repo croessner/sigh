@@ -42,15 +42,15 @@ namespace mapfile {
 
         void getSmimeParts(const Smime &);
 
-        static certstore_t certstore;
+        static certstore_t certStore;
 
-        static bool mapLoaded;
+        static bool loaded;
 
-        const std::string mailfrom;
+        const std::string mailFrom;
 
-        std::string smimecert;
+        std::string smimeCert;
 
-        std::string smimekey;
+        std::string smimeKey;
     };
 }  // namespace mapfile
 

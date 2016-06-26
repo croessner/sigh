@@ -33,8 +33,8 @@ namespace smime {
     Smime::Smime(std::ifstream &msg, const std::string &envfrom)
             : me(std::make_shared<mimetic::MimeEntity>(msg)),
               loaded(true),
-              smimesigned(false),
-              mailfrom([&]() -> decltype(mailfrom) {
+              smimeSigned(false),
+              mailFrom([&]() -> decltype(mailFrom) {
                   if (envfrom.front() == '<' && envfrom.back() == '>')
                       return envfrom.substr(1, envfrom.size()-2);
                   else
@@ -46,7 +46,7 @@ namespace smime {
             return;
 
         // Null-mailer
-        if (mailfrom.empty())
+        if (mailFrom.empty())
             return;
 
         const mimetic::ContentType &ct = me->header().contentType();
@@ -77,7 +77,7 @@ namespace smime {
          * or signed elsewhere.
          */
 
-        mapfile::Map email {mailfrom};
+        mapfile::Map email {mailFrom};
 
         auto cert = fs::path(email.getCert());
         auto key = fs::path(email.getKey());
@@ -87,12 +87,12 @@ namespace smime {
         if (!fs::exists(key) && !fs::is_regular(key))
             return;
 
-        smimesigned = true;
+        smimeSigned = true;
     }
 
     const std::unique_ptr<std::string> Smime::toString(
             const std::shared_ptr<mimetic::MimeEntity> msg) const {
-        if (!isLoaded() || !smimesigned)
+        if (!isLoaded() || !smimeSigned)
             return std::make_unique<std::string>("");
 
         /*

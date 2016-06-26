@@ -21,21 +21,21 @@
 
 namespace mlt {
     //! \brief This lock is for the unique identifier
-    static std::mutex unique_id_lock;
+    static std::mutex uniqueIdLock;
 
     // Public
 
     Client::Client(const std::string &hostname, struct sockaddr *hostaddr)
             : fcontent(nullptr),
               hostname(hostname),
-              ip_and_port(Client::prepareIPandPort(hostaddr)),
-              // Increase unique_id and initialize member id
-              id([]() -> decltype(unique_id) {
-                  unique_id_lock.lock();
-                  ++unique_id;
-                  unique_id_lock.unlock();
+              ipAndPort(Client::prepareIPandPort(hostaddr)),
+              // Increase uniqueId and initialize member id
+              id([]() -> decltype(uniqueId) {
+                  uniqueIdLock.lock();
+                  ++uniqueId;
+                  uniqueIdLock.unlock();
 
-                  return unique_id;
+                  return uniqueId;
               }()) { /* empty */ }
 
     Client::~Client() {
@@ -141,6 +141,6 @@ namespace mlt {
 
 // Init static
 
-    counter_t Client::unique_id = 0UL;
+    counter_t Client::uniqueId = 0UL;
 
 }  // namespace mlt

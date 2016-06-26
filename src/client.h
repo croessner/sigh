@@ -57,7 +57,7 @@ namespace mlt {
         bool openContentFileRO(void);
 
         //! \brief SMTP session data map
-        std::map<std::string, char *> session_data;
+        std::map<std::string, char *> sessionData;
 
         //! \brief Email content gets stored in a temp file
         FILE *fcontent;
@@ -69,7 +69,7 @@ namespace mlt {
         const std::string hostname;
 
         //! \brief IPv4/IPv6:port of a connected client
-        const std::string ip_and_port;
+        const std::string ipAndPort;
 
         //! \brief Identifier that a client got after a connect
         const counter_t id;
@@ -97,12 +97,10 @@ namespace mlt {
          * A global unique identifier that gets incremented for each new
          * client connection.
          */
-        static counter_t unique_id;
+        static counter_t uniqueId;
 
         //! \brief Name of a temporary file for email content
         fs::path temp;
-
-        std::ifstream tempfile;
     };
 }  // namespace mlt
 

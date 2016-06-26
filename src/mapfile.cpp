@@ -20,7 +20,7 @@
 namespace fs = boost::filesystem;
 
 namespace mapfile {
-    static std::mutex conf_lock;
+    static std::mutex confLock;
 
     using boost::split;
     using boost::is_any_of;
@@ -29,9 +29,9 @@ namespace mapfile {
     // Public
 
     Map::Map(const std::string &envfrom)
-            : mailfrom(envfrom),
-              smimecert(std::string()),
-              smimekey(std::string()) { /* empty */ }
+            : mailFrom(envfrom),
+              smimeCert(std::string()),
+              smimeKey(std::string()) { /* empty */ }
 
     void Map::readMap(const std::string &mapfile) {
         if (!fs::exists(fs::path(mapfile))
@@ -59,13 +59,13 @@ namespace mapfile {
                     std::cout << "keycol=" << keycol
                               << " valuecol=" << valuecol << std::endl;
 
-                conf_lock.lock();
-                certstore[keycol] = valuecol;
-                conf_lock.unlock();
+                confLock.lock();
+                certStore[keycol] = valuecol;
+                confLock.unlock();
             }
 
             store.close();
-            mapLoaded = true;
+            loaded = true;
         }
         catch (const std::exception &e) {
             std::cerr << "Error: " << e.what() << std::endl;
@@ -74,51 +74,51 @@ namespace mapfile {
     }
 
     const std::string & Map::getCert(void) {
-        if (mapLoaded && certstore.count(mailfrom) == 1)
+        if (loaded && certStore.count(mailFrom) == 1)
             getSmimeParts(Smime::CERT);
 
-        return smimecert;
+        return smimeCert;
     }
 
     const std::string & Map::getKey(void) {
-        if (mapLoaded && certstore.count(mailfrom) == 1)
+        if (loaded && certStore.count(mailFrom) == 1)
             getSmimeParts(Smime::KEY);
 
-        return smimekey;
+        return smimeKey;
     }
 
     // Private
 
     void Map::setSmimeFiles(
             const Smime &component,
-            const split_t &source,
+            const split_t &src,
             const std::string &what,
             size_t pos = 0) {
         split_t parts;
         std::size_t found;
 
-        found = source.at(pos).find(what);
+        found = src.at(pos).find(what);
         if (found != std::string::npos) {
-            split(parts, source.at(pos), is_any_of(":"), token_compress_on);
+            split(parts, src.at(pos), is_any_of(":"), token_compress_on);
             if (parts.size() != 2)
                 return;
             switch (component) {
                 case Smime::CERT:
-                    smimecert = parts.at(1);
+                    smimeCert = parts.at(1);
                     break;
                 case Smime::KEY:
-                    smimekey = parts.at(1);
+                    smimeKey = parts.at(1);
                     break;
             }
         } else {
             if (pos == 1)
                 return;
-            setSmimeFiles(component, source, what, ++pos);
+            setSmimeFiles(component, src, what, ++pos);
         }
     }
 
     void Map::getSmimeParts(const Smime &component) {
-        std::string raw = certstore[mailfrom];
+        std::string raw = certStore[mailFrom];
         split_t parts;
 
         // Split the value in two pieces
@@ -137,8 +137,8 @@ namespace mapfile {
         }
     }
 
-    certstore_t Map::certstore = {};
+    certstore_t Map::certStore = {};
 
-    bool Map::mapLoaded = false;
+    bool Map::loaded = false;
 
 }  // namespace mapfile

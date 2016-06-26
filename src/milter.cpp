@@ -139,7 +139,7 @@ sfsistat mlfi_connect(SMFICTX *ctx, char *hostname, struct sockaddr *hostaddr) {
     if (::debug) {
         std::cout << "id=" << client->id
                   << " connect from hostname=" << client->hostname
-                  << " socket=" << client->ip_and_port << std::endl;
+                  << " socket=" << client->ipAndPort << std::endl;
     }
 
     return SMFIS_CONTINUE;
@@ -172,7 +172,7 @@ sfsistat mlfi_envfrom(SMFICTX *ctx, char **smtp_argv) {
         return SMFIS_TEMPFAIL;
     }
 
-    client->session_data["envfrom"] = mailfrom;
+    client->sessionData["envfrom"] = mailfrom;
 
     return SMFIS_CONTINUE;
 }
@@ -282,7 +282,7 @@ sfsistat mlfi_eom(SMFICTX *ctx) {
     smfi_addheader(
             ctx, util::ccp("X-Sigh"), util::ccp("S/MIME signing milter"));
 
-    smime::Smime smimeMsg {client->content, client->session_data["envfrom"]};
+    smime::Smime smimeMsg {client->content, client->sessionData["envfrom"]};
 
     smimeMsg.sign();
     if (!smimeMsg.isSmimeSigned()) {
@@ -292,7 +292,7 @@ sfsistat mlfi_eom(SMFICTX *ctx) {
         return SMFIS_CONTINUE;
     } else {
         std::string logmsg = "Signed mail for email address "
-                             + std::string(client->session_data["envfrom"]);
+                             + std::string(client->sessionData["envfrom"]);
         syslog(LOG_NOTICE, "%s", logmsg.c_str());
     }
 
@@ -323,7 +323,7 @@ sfsistat mlfi_close(SMFICTX *ctx) {
     if (::debug) {
         std::cout << "id=" << client->id
                   << " disconnect from hostname=" << client->hostname
-                  << " socket=" << client->ip_and_port << std::endl;
+                  << " socket=" << client->ipAndPort << std::endl;
     }
 
     delete client;
