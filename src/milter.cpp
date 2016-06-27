@@ -27,6 +27,7 @@
 #include <fstream>
 #include <csignal>
 #include <thread>
+#include <vector>
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 
@@ -44,12 +45,14 @@ bool debug = false;
 //! \brief The internal milter name
 static char miltername[] = "sigh";
 
-//! \brief Version numer
+//! \brief Version number
 static const char version[] = "1606.1.0";
 
-// Configuration iotions for the milter
+//! \brief  Configuration options for the milter
 static std::unique_ptr<conf::MilterCfg> config(nullptr);
 
+//! \brief Required headers for the smfi_header()-callback
+static std::vector<std::string> header;
 
 /*!
  * \brief Global data structure that maps all callbacks
@@ -214,10 +217,27 @@ sfsistat mlfi_header(
     assert(ctx != nullptr);
 
     auto *client = util::mlfipriv(ctx);
-    if (fprintf(
-            client->fcontent, "%s: %s\r\n", header_key, header_value) < 0) {
-        std::cerr << "Error: Unable to write header" << std::endl;
-        return SMFIS_TEMPFAIL;
+
+    for (std::size_t i=0; i<::header.size(); i++) {
+        if (strncmp(header_key, ::header.at(i).c_str(),
+                    sizeof(::header.at(i))) == 0) {
+            char *hv = strdup(header_value);
+
+            if (hv == nullptr) {
+                perror("Error: Unable to copy header_value");
+                return SMFIS_TEMPFAIL;
+            }
+
+            client->sessionData[::header.at(i)] = hv;
+
+            if (fprintf(client->fcontent,
+                        "%s: %s\r\n",
+                        header_key,
+                        header_value) < 0) {
+                std::cerr << "Error: Unable to write header" << std::endl;
+                return SMFIS_TEMPFAIL;
+            }
+        }
     }
 
     return SMFIS_CONTINUE;
@@ -284,7 +304,9 @@ sfsistat mlfi_eom(SMFICTX *ctx) {
     smfi_addheader(
             ctx, util::ccp("X-Sigh"), util::ccp("S/MIME signing milter"));
 
-    smime::Smime smimeMsg {client->fcontent, client->sessionData["envfrom"]};
+    smime::Smime smimeMsg {ctx,
+                           client->fcontent,
+                           client->sessionData["envfrom"]};
 
     smimeMsg.sign();
     if (!smimeMsg.isSmimeSigned()) {
@@ -350,12 +372,6 @@ sfsistat mlfi_negotiate(
         *pf0 |= SMFIF_ADDHDRS;
     else
         return SMFIS_REJECT;
-
-#ifdef SMFIP_HDR_LEADSPC
-    // Preserve leading whitespaces
-    if ((f1 & SMFIP_HDR_LEADSPC) != 0)
-        *pf1 |= SMFIP_HDR_LEADSPC;
-#endif  // SMFIP_HDR_LEADSPC
 
     *pf2 = 0;
     *pf3 = 0;
@@ -566,6 +582,13 @@ int main(int argc, const char *argv[]) {
             std::cerr << "Error: Unable to create PID file" << std::endl;
         out.close();
     }
+
+    // Define headers
+    ::header.push_back("Content-Type");
+    ::header.push_back("Content-Disposition");
+    ::header.push_back("Content-Description");
+    ::header.push_back("Content-Transfer-Encoding");
+    ::header.push_back("MIME-Version");
 
     // Workaround for stolen signals
     std::thread milter {[]() {

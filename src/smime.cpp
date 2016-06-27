@@ -19,6 +19,7 @@
 #include <boost/filesystem.hpp>
 
 #include "util.h"
+#include "client.h"
 #include "mapfile.h"
 
 namespace fs = boost::filesystem;
@@ -32,8 +33,9 @@ namespace smime {
         return out;
     }
 
-    Smime::Smime(FILE *msg, const std::string &envfrom)
-            : fcontent(msg),
+    Smime::Smime(SMFICTX *ctx, FILE *msg, const std::string &envfrom)
+            : ctx(ctx),
+              fcontent(msg),
               loaded(true),
               smimeSigned(false),
               mailFrom([&]() -> decltype(mailFrom) {
@@ -41,7 +43,9 @@ namespace smime {
                       return envfrom.substr(1, envfrom.size()-2);
                   else
                       return envfrom;
-              }()) { /* empty */ }
+              }()) {
+        assert(ctx != nullptr);
+    }
 
     void Smime::sign() {
         if (!isLoaded())
@@ -51,29 +55,32 @@ namespace smime {
         if (mailFrom.empty())
             return;
 
-        /*
-        const mimetic::ContentType &ct = me->header().contentType();
-
+        auto *client = util::mlfipriv(ctx);
         bool signedOrEncrypted = false;
+        std::vector<std::string> contentType;
 
-        // S/MIME and OpenPGP: multipart/signed
-        if (ct.isMultipart() && ct.subtype() == "signed")
-            signedOrEncrypted = true;
+        contentType.push_back("multipart/signed");
+        contentType.push_back("multipart/encrypted");
+        contentType.push_back("application/pkcs7-mime");
 
-        // OpenPGP: multipart/encrypted
-        if (ct.isMultipart() && ct.subtype() == "encrypted")
-            signedOrEncrypted = true;
+        if (client->sessionData.count("Content-Type") == 1) {
+            std::string value {client->sessionData["Content-Type"]};
+            std::size_t found;
 
-        // S/MIME: application/pkcs7-mime
-        if (ct.type() == "application" && ct.subtype() == "pkcs7-mime")
-            signedOrEncrypted = true;
+            for (int i=0; i<contentType.size(); i++) {
+                found = value.find(contentType.at(i));
+                if (found != std::string::npos) {
+                    signedOrEncrypted = true;
+                    break;
+                }
+            }
+        }
 
         if (signedOrEncrypted) {
             const char logmsg[] = "Message already signed or encrypted";
             syslog(LOG_NOTICE, "%s", logmsg);
             return;
         }
-        */
 
         /*
          * TODO:
@@ -128,8 +135,7 @@ namespace smime {
 
     // Private
 
-    void Smime::changeHeader(SMFICTX *ctx,
-                             const std::string &headerk,
+    void Smime::changeHeader(const std::string &headerk,
                              const std::string &headerv) {
         int result = smfi_chgheader(ctx,
                                     util::ccp(headerk.c_str()),
