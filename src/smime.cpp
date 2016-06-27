@@ -96,12 +96,14 @@ namespace smime {
 
     const std::unique_ptr<std::string> Smime::bodyAsString() const {
         if (!isLoaded() || !smimeSigned)
-            return std::make_unique<std::string>("");
+            return std::make_unique<std::string>(std::string());
 
         char line[MAX_BODY_LINE_LENGTH];
         char eol[] = "\r\n";
         std::string dst = std::string();
         bool first_blank_line = false;
+
+        clearerr(fcontent);
 
         while (fgets(line, sizeof(line), fcontent)) {
             if (!first_blank_line) {
@@ -112,6 +114,11 @@ namespace smime {
                     continue;
             }
             dst += std::string(line);
+        }
+
+        if (ferror(fcontent) != 0) {
+            perror("Error: Unable to read from temp file");
+            return std::make_unique<std::string>(std::string());
         }
 
         auto body = std::make_unique<std::string>(dst);
