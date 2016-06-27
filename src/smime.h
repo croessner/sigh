@@ -15,15 +15,16 @@
 #include <iostream>
 #include <fstream>
 #include <memory>
-#include <mimetic/mimetic.h>
 #include <libmilter/mfapi.h>
+
+#define MAX_BODY_LINE_LENGTH    80
 
 namespace smime {
     class Smime {
     public:
         friend std::ostream & operator<<(std::ostream &, const Smime &);
 
-        Smime(std::ifstream &, const std::string &);
+        Smime(FILE *, const std::string &);
 
         ~Smime(void) = default;
 
@@ -31,15 +32,14 @@ namespace smime {
 
         inline bool isSmimeSigned(void) const { return smimeSigned; }
 
-        const std::unique_ptr<std::string> toString(
-                const std::shared_ptr<mimetic::MimeEntity>) const;
+        const std::unique_ptr<std::string> bodyAsString() const;
 
         void sign(void);
 
     private:
         void changeHeader(SMFICTX *, const std::string &, const std::string &);
 
-        std::shared_ptr<mimetic::MimeEntity> me;
+        FILE *fcontent;
 
         bool loaded;
 

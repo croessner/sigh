@@ -21,7 +21,6 @@ find_package(
         REQUIRED
 )
 find_library(milter_LIBRARIES milter)
-find_library(mimetic_LIBRARIES mimetic)
 find_library(crypto_LIBRARIES crypto)
 
 include_directories(
@@ -49,7 +48,6 @@ target_link_libraries (
         sigh
         ${CMAKE_THREAD_LIBS_INIT}
         ${milter_LIBRARIES}
-        ${mimetic_LIBRARIES}
         ${crypto_LIBRARIES}
         ${Boost_LIBRARIES}
 )

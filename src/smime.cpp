@@ -14,6 +14,8 @@
 #include <openssl/pkcs7.h>
 #include <openssl/err.h>
 #include <syslog.h>
+
+#include <sstream>
 #include <boost/filesystem.hpp>
 
 #include "util.h"
@@ -25,13 +27,13 @@ namespace smime {
     // Public
 
     std::ostream & operator<<(std::ostream &out, const Smime &sm) {
-        out << *sm.toString(sm.me);
+        out << *sm.bodyAsString();
 
         return out;
     }
 
-    Smime::Smime(std::ifstream &msg, const std::string &envfrom)
-            : me(std::make_shared<mimetic::MimeEntity>(msg)),
+    Smime::Smime(FILE *msg, const std::string &envfrom)
+            : fcontent(msg),
               loaded(true),
               smimeSigned(false),
               mailFrom([&]() -> decltype(mailFrom) {
@@ -49,6 +51,7 @@ namespace smime {
         if (mailFrom.empty())
             return;
 
+        /*
         const mimetic::ContentType &ct = me->header().contentType();
 
         bool signedOrEncrypted = false;
@@ -70,6 +73,7 @@ namespace smime {
             syslog(LOG_NOTICE, "%s", logmsg);
             return;
         }
+        */
 
         /*
          * TODO:
@@ -90,36 +94,24 @@ namespace smime {
         smimeSigned = true;
     }
 
-    const std::unique_ptr<std::string> Smime::toString(
-            const std::shared_ptr<mimetic::MimeEntity> msg) const {
+    const std::unique_ptr<std::string> Smime::bodyAsString() const {
         if (!isLoaded() || !smimeSigned)
             return std::make_unique<std::string>("");
 
-        /*
-         * stringstream uses an internal line separator "\n", so our "\r\n"
-         * becomes just a single "\r". We repair this while assigning string
-         * "s" to the final destination string "dst".
-         */
-
-        std::stringstream src;
-        std::string s, dst;
+        char line[MAX_BODY_LINE_LENGTH];
+        char eol[] = "\r\n";
+        std::string dst = std::string();
         bool first_blank_line = false;
 
-        src << *msg;
-
-        while (std::getline(src, s)) {
+        while (fgets(line, sizeof(line), fcontent)) {
             if (!first_blank_line) {
-                if (s.empty() || s.front() == '\r') {
+                if (strncmp(line, eol, 1) == 0) {
                     first_blank_line = true;
                     continue;
                 } else
                     continue;
             }
-
-            if (!s.empty() && s.back() == '\r')
-                dst += s + '\n';
-            else
-                dst += s;
+            dst += std::string(line);
         }
 
         auto body = std::make_unique<std::string>(dst);

@@ -276,13 +276,15 @@ sfsistat mlfi_eom(SMFICTX *ctx) {
 
     auto *client = util::mlfipriv(ctx);
 
-    if (!client->openContentFileRO())
+    if (fseek(client->fcontent, 0L, SEEK_SET) == -1) {
+        perror("Error: Unwilling to rewind temp file");
         return SMFIS_TEMPFAIL;
+    }
 
     smfi_addheader(
             ctx, util::ccp("X-Sigh"), util::ccp("S/MIME signing milter"));
 
-    smime::Smime smimeMsg {client->content, client->sessionData["envfrom"]};
+    smime::Smime smimeMsg {client->fcontent, client->sessionData["envfrom"]};
 
     smimeMsg.sign();
     if (!smimeMsg.isSmimeSigned()) {
@@ -296,8 +298,8 @@ sfsistat mlfi_eom(SMFICTX *ctx) {
         syslog(LOG_NOTICE, "%s", logmsg.c_str());
     }
 
-    //if (::debug)
-    //    std::cout << smimeMsg;
+    if (::debug)
+        std::cout << smimeMsg;
 
     return SMFIS_CONTINUE;
 }

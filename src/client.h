@@ -54,16 +54,11 @@ namespace mlt {
          */
         bool createContentFile(const std::string &);
 
-        bool openContentFileRO(void);
-
         //! \brief SMTP session data map
         std::map<std::string, char *> sessionData;
 
         //! \brief Email content gets stored in a temp file
         FILE *fcontent;
-
-        //! \brief Email content as ifstream opened read-only
-        std::ifstream content;
 
         //! \brief Hostname of a connected client
         const std::string hostname;

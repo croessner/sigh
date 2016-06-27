@@ -78,16 +78,6 @@ namespace mlt {
         return fcontent != nullptr;
     }
 
-    bool Client::openContentFileRO(void) {
-        if (fcontent != nullptr) {
-            fclose(fcontent);
-            fcontent = nullptr;
-        }
-
-        content.open(temp.string());
-        return content.is_open();
-    }
-
     // Private
 
     const std::string Client::prepareIPandPort(struct sockaddr *hostaddr) {
