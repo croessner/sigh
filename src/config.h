@@ -79,6 +79,8 @@ namespace conf {
         } defaults;
     };
 
+    // Public
+
     template <typename T, typename R>
     R MilterCfg::getValue(const std::string &key) {
         if (param.count(key) == 0)

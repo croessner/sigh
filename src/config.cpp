@@ -21,6 +21,8 @@ namespace fs = boost::filesystem;
 namespace conf {
     using boost::any_cast;
 
+    // Public
+
     MilterCfg::MilterCfg(const po::variables_map &vm) {
         std::string conffile = vm["config"].as<std::string>();
 

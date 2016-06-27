@@ -13,7 +13,6 @@
 #include <sstream>
 #include <mutex>
 #include <boost/filesystem.hpp>
-#include <boost/algorithm/string.hpp>
 
 #include "mapfile.h"
 
@@ -21,10 +20,6 @@ namespace fs = boost::filesystem;
 
 namespace mapfile {
     static std::mutex confLock;
-
-    using boost::split;
-    using boost::is_any_of;
-    using boost::token_compress_on;
 
     // Public
 
@@ -73,69 +68,7 @@ namespace mapfile {
         }
     }
 
-    const std::string & Map::getCert(void) {
-        if (loaded && certStore.count(mailFrom) == 1)
-            getSmimeParts(Smime::CERT);
-
-        return smimeCert;
-    }
-
-    const std::string & Map::getKey(void) {
-        if (loaded && certStore.count(mailFrom) == 1)
-            getSmimeParts(Smime::KEY);
-
-        return smimeKey;
-    }
-
     // Private
-
-    void Map::setSmimeFiles(
-            const Smime &component,
-            const split_t &src,
-            const std::string &what,
-            size_t pos = 0) {
-        split_t parts;
-        std::size_t found;
-
-        found = src.at(pos).find(what);
-        if (found != std::string::npos) {
-            split(parts, src.at(pos), is_any_of(":"), token_compress_on);
-            if (parts.size() != 2)
-                return;
-            switch (component) {
-                case Smime::CERT:
-                    smimeCert = parts.at(1);
-                    break;
-                case Smime::KEY:
-                    smimeKey = parts.at(1);
-                    break;
-            }
-        } else {
-            if (pos == 1)
-                return;
-            setSmimeFiles(component, src, what, ++pos);
-        }
-    }
-
-    void Map::getSmimeParts(const Smime &component) {
-        std::string raw = certStore[mailFrom];
-        split_t parts;
-
-        // Split the value in two pieces
-        split(parts, raw, is_any_of(","), token_compress_on);
-
-        if (parts.size() != 2)
-            return;
-
-        switch (component) {
-            case Smime::CERT:
-                setSmimeFiles(component, parts, "cert:");
-                break;
-            case Smime::KEY:
-                setSmimeFiles(component, parts, "key:");
-                break;
-        }
-    }
 
     certstore_t Map::certStore = {};
 

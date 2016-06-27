@@ -79,8 +79,8 @@ namespace smime {
 
         mapfile::Map email {mailFrom};
 
-        auto cert = fs::path(email.getCert());
-        auto key = fs::path(email.getKey());
+        auto cert = fs::path(email.getSmimeFilename<mapfile::Smime::CERT>());
+        auto key = fs::path(email.getSmimeFilename<mapfile::Smime::KEY>());
 
         if (!fs::exists(cert) && !fs::is_regular(cert))
             return;
