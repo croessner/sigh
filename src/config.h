@@ -42,71 +42,10 @@ namespace conf {
         virtual ~MilterCfg() = default;
 
         /*!
-         * \brief The milter socket
-         *
-         * The socket may have one of three formats. First is
-         * inet:portnumber\@host, second is inet6:portnumber\@host6 or a unix
-         * socket like unix:/pat/to/socket. host and host6 may be a hostname
-         * or a valid IP address. IPv6 addresses must be written in squared
-         * braces.
+         * \brief Return a configuration value
          */
-        inline std::string getSocket(void) {
-            return any_cast<std::string>(param["socket"]);
-        }
-
-        /*!
-         * The milter will drop its privileges to this user
-         */
-        inline std::string getUser(void) {
-            return any_cast<std::string>(param["user"]);
-        }
-
-        /*!
-         * The milter will drop its privileges to this group
-         */
-        inline std::string getGroup(void) {
-            return any_cast<std::string>(param["group"]);
-        }
-
-        /*!
-         * \brief An optional PID file
-         *
-         * If desired, a PID file may be created on startup. It will be
-         * automatically removed, when the milter gets stopped again.
-         */
-        inline std::string getPidFile(void) {
-            return any_cast<std::string>(param["pidfile"]);
-        }
-
-        /*!
-         * \brief Map file containing S/MIME certificates
-         *
-         * This file contains a mapping between email addresses and
-         * associated S/MIME certificates and keys.
-         */
-        inline std::string getMapFile(void) {
-            return any_cast<std::string>(param["mapfile"]);
-        }
-
-        /*!
-         * \brief Path to a temporary directory
-         *
-         */
-        inline std::string getTmpDir(void) {
-            return any_cast<std::string>(param["tmpdir"]);
-        }
-
-        #if !__APPLE__ && !defined _NOT_DAEMONIZE
-        /*!
-         * \brief Bring the milter to background
-         *
-         * The milter gets a daemon. The root path is set to '/' and the
-         * standard in and out channels are closed
-         */
-        inline bool getDaemon(void) {
-            return any_cast<bool>(param["daemon"]);
-        }
-#endif  // !__APPLE__ && !defined _NOT_DAEMONIZE
+        template <typename T=std::string, typename R=T>
+        R getValue(const std::string &);
 
     private:
         /*!
@@ -139,6 +78,13 @@ namespace conf {
             std::string tmpdir = "/tmp";
         } defaults;
     };
+
+    template <typename T, typename R>
+    R MilterCfg::getValue(const std::string &key) {
+        if (param.count(key) == 0)
+            return "";
+        return any_cast<T>(param[key]);
+    }
 }  // namespace conf
 
 #endif  // SRC_CONFIG_H_

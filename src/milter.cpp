@@ -162,7 +162,7 @@ sfsistat mlfi_envfrom(SMFICTX *ctx, char **smtp_argv) {
     assert(ctx != nullptr);
 
     auto *client = util::mlfipriv(ctx);
-    if (!client->createContentFile(::config->getTmpDir()))
+    if (!client->createContentFile(::config->getValue("tmpdir")))
         return SMFIS_TEMPFAIL;
 
     // Copy envelope sender address
@@ -268,7 +268,7 @@ sfsistat mlfi_body(SMFICTX *ctx, unsigned char *bodyp, size_t body_len) {
 sfsistat mlfi_eom(SMFICTX *ctx) {
     assert(ctx != nullptr);
 
-    std::string mapfile = ::config->getMapFile();
+    std::string mapfile = ::config->getValue("mapfile");
     if (mapfile.empty()) {
         std::cerr << "Error: No map file defined" << std::endl;
         return SMFIS_TEMPFAIL;
@@ -403,7 +403,7 @@ static void signalHandler(int sig) {
         case SIGHUP:
             std::cout << "Caught signal " << sig
                       << ". Reloading mapfile" << std::endl;
-            mapfile::Map::readMap(::config->getMapFile());
+            mapfile::Map::readMap(::config->getValue("mapfile"));
             syslog(LOG_NOTICE, "%s", std::string("Mapfile reloaded").c_str());
             break;
         default:
@@ -488,21 +488,21 @@ int main(int argc, const char *argv[]) {
     ::config = std::make_unique<conf::MilterCfg>(vm);
 
     if (vm.count("socket") == 0)
-        mfsocket = ::config->getSocket();
+        mfsocket = ::config->getValue("socket");
     if (vm.count("user") == 0)
-        mfuser = ::config->getUser();
+        mfuser = ::config->getValue("user");
     if (vm.count("group") == 0)
-        mfgroup = ::config->getGroup();
+        mfgroup = ::config->getValue("group");
     if (vm.count("pidfile") == 0)
-        mfpidfile = ::config->getPidFile();
+        mfpidfile = ::config->getValue("pidfile");
 #if !__APPLE__ && !defined _NOT_DAEMONIZE
     if (!vm["daemon"].as<bool>())
-        mfdaemon = ::config->getDaemon();
+        mfdaemon = ::config->getValue<bool>("daemon");
     else
         mfdaemon = true;
 #endif  // !__APPLE__ && !defined _NOT_DAEMONIZE
 
-    mapfile::Map::readMap(::config->getMapFile());
+    mapfile::Map::readMap(::config->getValue("mapfile"));
 
     grp = getgrnam(mfgroup.c_str());
     if (grp) {
