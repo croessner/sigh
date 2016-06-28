@@ -101,26 +101,82 @@ namespace smime {
         if (!fs::exists(key) && !fs::is_regular(key))
             return;
 
-        // Signing starts here
+        /*
+         * Signing starts here
+         *
+         * This code block is based on an example from openssl/demos/smime
+         */
 
         BIO *in = nullptr, *out = nullptr, *tbio = nullptr;
         X509 *scert = nullptr;
         EVP_PKEY *skey = nullptr;
         PKCS7 *p7 = nullptr;
+        bool done = false;
 
         int flags = PKCS7_DETACHED | PKCS7_STREAM;
 
         OpenSSL_add_all_algorithms();
         ERR_load_crypto_strings();
 
-        tbio = BIO_new_file(client->getTempFile().c_str(), "r");
+        // S/MIME certificate
+        tbio = BIO_new_file(cert.string().c_str(), "r");
 
-        if (!tbio) {
-            std::cerr << "BIO_new_file() failed" << std::endl;
-            return;
+        if (!tbio)
+            goto end;
+
+        scert = PEM_read_bio_X509(tbio, nullptr, 0, nullptr);
+
+        // S/MIME key
+        tbio = BIO_new_file(key.string().c_str(), "r");
+
+        if (!tbio)
+            goto end;
+
+        skey = PEM_read_bio_PrivateKey(tbio, nullptr, 0, nullptr);
+
+        if (!scert || !skey)
+            goto end;
+
+        // Loading mail content from temp file
+        in = BIO_new_file(client->getTempFile().c_str(), "r");
+
+        if (!in)
+            goto end;
+
+        // Signing
+        p7 = PKCS7_sign(scert, skey, nullptr, in, flags);
+
+        if (!p7)
+            goto end;
+
+        // Successfully signed an email
+        smimeSigned = done = true;
+
+        end:
+
+        if (!done) {
+            std::cerr << "Error: Signing data" << std::endl;
+            u_long e = ERR_get_error();
+            char buf[120];
+            (void) ERR_error_string(e, buf);
+            std::cerr << buf << std::endl;
+            syslog(LOG_ERR, "%s", buf);
         }
 
-        smimeSigned = true;
+        // Cleanup
+        if (p7)
+            PKCS7_free(p7);
+        if (scert)
+            X509_free(scert);
+        if (skey)
+            EVP_PKEY_free(skey);
+
+        if (in)
+            BIO_free(in);
+        if (out)
+            BIO_free(out);
+        if (tbio)
+            BIO_free(tbio);
     }
 
     const std::unique_ptr<std::string> Smime::bodyAsString() const {
