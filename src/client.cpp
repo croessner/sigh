@@ -37,6 +37,8 @@ namespace mlt {
 
                   return uniqueId;
               }()),
+              mailflags(mailflags::TYPE_NONE),
+              optionalPreamble(true),
               fcontentStatus(false) { /* empty */ }
 
     Client::~Client() {

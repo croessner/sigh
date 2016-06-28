@@ -120,7 +120,6 @@ namespace smime {
 
         // S/MIME certificate
         tbio = BIO_new_file(cert.string().c_str(), "r");
-
         if (!tbio)
             goto end;
 
@@ -128,25 +127,29 @@ namespace smime {
 
         // S/MIME key
         tbio = BIO_new_file(key.string().c_str(), "r");
-
         if (!tbio)
             goto end;
 
         skey = PEM_read_bio_PrivateKey(tbio, nullptr, 0, nullptr);
-
         if (!scert || !skey)
             goto end;
 
         // Loading mail content from temp file
         in = BIO_new_file(client->getTempFile().c_str(), "r");
-
         if (!in)
             goto end;
 
         // Signing
         p7 = PKCS7_sign(scert, skey, nullptr, in, flags);
-
         if (!p7)
+            goto end;
+
+        out = BIO_new(BIO_s_mem());
+        if (!out)
+            goto end;
+
+        // Write out S/MIME message
+        if (!SMIME_write_PKCS7(out, p7, in, flags))
             goto end;
 
         // Successfully signed an email

@@ -218,9 +218,10 @@ sfsistat mlfi_header(
 
     auto *client = util::mlfipriv(ctx);
 
-    for (std::size_t i=0; i<::header.size(); i++) {
-        if (strncmp(header_key, ::header.at(i).c_str(),
-                    sizeof(::header.at(i))) == 0) {
+    std::vector<std::string>::iterator it = ::header.begin();
+    for (std::size_t i=0; i<::header.size(); i++, it++) {
+        if (strncasecmp(header_key, ::header.at(i).c_str(),
+                        ::header.at(i).size()) == 0) {
             char *hv = strdup(header_value);
 
             if (hv == nullptr) {
@@ -237,6 +238,23 @@ sfsistat mlfi_header(
                 std::cerr << "Error: Unable to write header" << std::endl;
                 return SMFIS_TEMPFAIL;
             }
+
+            // Found MIME-VERSION
+            if (strncasecmp(header_key,
+                            std::string("MIME-Version").c_str(),
+                            12) == 0)
+                client->mailflags |= mlt::mailflags::TYPE_MIME;
+
+            // Found multipart message
+            if (strncasecmp(header_key,
+                            std::string("Content-Type").c_str(),
+                            12) == 0)
+                if (strstr(header_value, "multipart/") != nullptr)
+                    client->mailflags |= mlt::mailflags::TYPE_MULTIPART;
+
+            ::header.erase(it);
+
+            break;
         }
     }
 
@@ -252,6 +270,19 @@ sfsistat mlfi_eoh(SMFICTX *ctx) {
     assert(ctx != nullptr);
 
     auto *client = util::mlfipriv(ctx);
+
+    /*
+     * Content-Type set without MIME-Version violates RFC2045
+     */
+    if (client->mailflags & mlt::mailflags::TYPE_MULTIPART
+            && (client->mailflags & mlt::mailflags::TYPE_MIME) == 0) {
+        char reply[] = "RFC2045 violation";
+        char status[] = "554";  // Transaction failed
+        char code[] = "5.6.0";  // Invalid mail format
+        smfi_setreply(ctx, status, code, reply);
+        return SMFIS_REJECT;
+    }
+
     if (fprintf(client->fcontent, "\r\n") <= 0) {
         std::cerr << "Error: Unable to write end of header" << std::endl;
         return SMFIS_TEMPFAIL;
@@ -272,6 +303,28 @@ sfsistat mlfi_body(SMFICTX *ctx, unsigned char *bodyp, size_t body_len) {
         return SMFIS_CONTINUE;
 
     auto *client = util::mlfipriv(ctx);
+
+    if (client->optionalPreamble
+        && client->mailflags & mlt::mailflags::TYPE_MULTIPART) {
+        unsigned char *bodyit = bodyp;
+        size_t remaining = body_len;
+
+        /*
+         * Remove preamble, RFC2046, 5.1.1
+         */
+        while (strncmp(
+                (const char *) bodyit, std::string("--").c_str(), 2) != 0) {
+            if (remaining > 0) {
+                bodyit++;
+                remaining--;
+            }
+        }
+        bodyp = bodyit;
+        body_len = remaining;
+
+        client->optionalPreamble = false;
+    }
+
     if (fwrite(bodyp, body_len, 1, client->fcontent) <= 0) {
         std::cerr << "Error: Unable to write body" << std::endl;
         return SMFIS_TEMPFAIL;
@@ -587,11 +640,12 @@ int main(int argc, const char *argv[]) {
     }
 
     // Define headers
+    ::header.push_back("MIME-Version");
+    ::header.push_back("Content-ID");
     ::header.push_back("Content-Type");
     ::header.push_back("Content-Disposition");
     ::header.push_back("Content-Description");
     ::header.push_back("Content-Transfer-Encoding");
-    ::header.push_back("MIME-Version");
 
     // Workaround for stolen signals
     std::thread milter {[]() {

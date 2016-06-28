@@ -28,6 +28,12 @@ extern bool debug;
 namespace mlt {
     typedef u_long counter_t;
 
+    enum mailflags {
+        TYPE_NONE        = 0x0,
+        TYPE_MIME        = 0x1,
+        TYPE_MULTIPART   = 0x2
+    };
+
     /*!
      * \brief This class stores SMTP session data
      */
@@ -75,6 +81,10 @@ namespace mlt {
         //! \brief Identifier that a client got after a connect
         const counter_t id;
 
+        u_int8_t mailflags;
+
+        bool optionalPreamble;
+
     private:
         /*!
          * \brief Convert struct sockaddr to a string representation
@@ -104,6 +114,7 @@ namespace mlt {
         fs::path temp;
 
         bool fcontentStatus;
+
     };
 }  // namespace mlt
 
