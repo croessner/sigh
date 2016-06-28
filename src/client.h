@@ -54,6 +54,12 @@ namespace mlt {
          */
         bool createContentFile(const std::string &);
 
+        inline const std::string & getTempFile() const {
+            return temp.string();
+        }
+
+        inline bool getFcontentStatus(void) { return fcontentStatus; }
+
         //! \brief SMTP session data map
         std::map<std::string, char *> sessionData;
 
@@ -96,6 +102,8 @@ namespace mlt {
 
         //! \brief Name of a temporary file for email content
         fs::path temp;
+
+        bool fcontentStatus;
     };
 }  // namespace mlt
 

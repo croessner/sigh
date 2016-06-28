@@ -33,25 +33,28 @@ namespace smime {
         return out;
     }
 
-    Smime::Smime(SMFICTX *ctx, FILE *msg, const std::string &envfrom)
+    Smime::Smime(SMFICTX *ctx)
             : ctx(ctx),
-              fcontent(msg),
               loaded(true),
               smimeSigned(false),
-              mailFrom([&]() -> decltype(mailFrom) {
-                  if (envfrom.front() == '<' && envfrom.back() == '>')
-                      return envfrom.substr(1, envfrom.size()-2);
+              mailFrom([&]() {
+                  auto *client = util::mlfipriv(ctx);
+                  if (client->sessionData.count("envfrom") == 1) {
+                      std::string envfrom = client->sessionData["envfrom"];
+                      if (envfrom.front() == '<' && envfrom.back() == '>')
+                          return envfrom.substr(1, envfrom.size() - 2);
+                      else
+                          return envfrom;
+                  }
                   else
-                      return envfrom;
-              }()) {
-        assert(ctx != nullptr);
-    }
+                      return std::string();
+              }()) { /* empty */ };
 
     void Smime::sign() {
         if (!isLoaded())
             return;
 
-        // Null-mailer
+        // Null-mailer or unknown
         if (mailFrom.empty())
             return;
 
@@ -98,6 +101,25 @@ namespace smime {
         if (!fs::exists(key) && !fs::is_regular(key))
             return;
 
+        // Signing starts here
+
+        BIO *in = nullptr, *out = nullptr, *tbio = nullptr;
+        X509 *scert = nullptr;
+        EVP_PKEY *skey = nullptr;
+        PKCS7 *p7 = nullptr;
+
+        int flags = PKCS7_DETACHED | PKCS7_STREAM;
+
+        OpenSSL_add_all_algorithms();
+        ERR_load_crypto_strings();
+
+        tbio = BIO_new_file(client->getTempFile().c_str(), "r");
+
+        if (!tbio) {
+            std::cerr << "BIO_new_file() failed" << std::endl;
+            return;
+        }
+
         smimeSigned = true;
     }
 
@@ -105,27 +127,35 @@ namespace smime {
         if (!isLoaded() || !smimeSigned)
             return std::make_unique<std::string>(std::string());
 
+        auto *client = util::mlfipriv(ctx);
         char line[MAX_BODY_LINE_LENGTH];
         char eol[] = "\r\n";
         std::string dst = std::string();
         bool first_blank_line = false;
 
-        clearerr(fcontent);
-
-        while (fgets(line, sizeof(line), fcontent)) {
-            if (!first_blank_line) {
-                if (strncmp(line, eol, 1) == 0) {
-                    first_blank_line = true;
-                    continue;
-                } else
-                    continue;
+        if (client->getFcontentStatus()) {
+            if (fseek(client->fcontent, 0L, SEEK_SET) == -1) {
+                perror("Error: Unwilling to rewind temp file");
+                return std::make_unique<std::string>(std::string());
             }
-            dst += std::string(line);
-        }
 
-        if (ferror(fcontent) != 0) {
-            perror("Error: Unable to read from temp file");
-            return std::make_unique<std::string>(std::string());
+            clearerr(client->fcontent);
+
+            while (fgets(line, sizeof(line), client->fcontent)) {
+                if (!first_blank_line) {
+                    if (strncmp(line, eol, 1) == 0) {
+                        first_blank_line = true;
+                        continue;
+                    } else
+                        continue;
+                }
+                dst += std::string(line);
+            }
+
+            if (ferror(client->fcontent) != 0) {
+                perror("Error: Unable to read from temp file");
+                return std::make_unique<std::string>(std::string());
+            }
         }
 
         auto body = std::make_unique<std::string>(dst);

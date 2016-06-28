@@ -36,7 +36,8 @@ namespace mlt {
                   uniqueIdLock.unlock();
 
                   return uniqueId;
-              }()) { /* empty */ }
+              }()),
+              fcontentStatus(false) { /* empty */ }
 
     Client::~Client() {
         try {
@@ -69,6 +70,7 @@ namespace mlt {
         temp = fs::unique_path(tmpdir + "/%%%%-%%%%-%%%%-%%%%.eml");
         try {
             fcontent = fopen(temp.string().c_str(), "w+");
+            fcontentStatus = true;
         }
         catch (const std::exception &e) {
             fcontent = nullptr;
@@ -113,7 +115,7 @@ namespace mlt {
     }
 
     void Client::cleanup(void) {
-        if (fcontent != nullptr) {
+        if (getFcontentStatus() || fcontent != nullptr) {
             fclose(fcontent);
             fcontent = nullptr;
         }

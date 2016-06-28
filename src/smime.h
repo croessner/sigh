@@ -24,7 +24,7 @@ namespace smime {
     public:
         friend std::ostream & operator<<(std::ostream &, const Smime &);
 
-        Smime(SMFICTX *, FILE *, const std::string &);
+        Smime(SMFICTX *);
 
         ~Smime(void) = default;
 
@@ -40,8 +40,6 @@ namespace smime {
         void changeHeader(const std::string &, const std::string &);
 
         SMFICTX *ctx;
-
-        FILE *fcontent;
 
         bool loaded;
 
