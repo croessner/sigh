@@ -8,10 +8,15 @@
   * \copyright Copyright 2016 Christian Roessner <c@roessner.co>
  */
 
+#ifndef SRC_UTIL_H_
+#define SRC_UTIL_H_
+
 #include <string>
 #include <libmilter/mfapi.h>
 
 #include "client.h"
+
+const char mlt_header_name[] = "X-Sigh";
 
 namespace util {
     /*!
@@ -19,14 +24,16 @@ namespace util {
      * \param x A string literal
      * \return A pointer to char
      */
-    static auto ccp = [](const std::string &str) {
+    auto ccp = [](const std::string &str) {
         return const_cast<char *> (str.c_str());
     };
 
     /*!
      * \brief Data structure for each client connection
      */
-    static auto mlfipriv = [](SMFICTX *ctx) {
+    auto mlfipriv = [](SMFICTX *ctx) {
         return static_cast<mlt::Client *> (smfi_getpriv(ctx));
     };
 }  // namespace util
+
+#endif  // SRC_UTIL_H_

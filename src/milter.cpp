@@ -33,7 +33,7 @@
 
 #include "config.h"
 #include "smime.h"
-#include "util.h"
+#include "common.h"
 #include "mapfile.h"
 
 namespace fs = boost::filesystem;
@@ -222,22 +222,19 @@ sfsistat mlfi_header(
     for (std::size_t i=0; i<::header.size(); i++, it++) {
         if (strncasecmp(header_key, ::header.at(i).c_str(),
                         ::header.at(i).size()) == 0) {
-            char *hv = strdup(header_value);
+            char *hk = strdup(header_key);
+            if (hk == nullptr) {
+                perror("Error: Unable to copy header_key");
+                return SMFIS_TEMPFAIL;
+            }
 
+            char *hv = strdup(header_value);
             if (hv == nullptr) {
                 perror("Error: Unable to copy header_value");
                 return SMFIS_TEMPFAIL;
             }
 
-            client->sessionData[::header.at(i)] = hv;
-
-            if (fprintf(client->fcontent,
-                        "%s: %s\r\n",
-                        header_key,
-                        header_value) < 0) {
-                std::cerr << "Error: Unable to write header" << std::endl;
-                return SMFIS_TEMPFAIL;
-            }
+            client->markedHeaders.push_back(hk);
 
             // Found MIME-VERSION
             if (strncasecmp(header_key,
@@ -252,7 +249,23 @@ sfsistat mlfi_header(
                 if (strstr(header_value, "multipart/") != nullptr)
                     client->mailflags |= mlt::mailflags::TYPE_MULTIPART;
 
+            // Found out own header
+            if (strncasecmp(header_key,
+                            mlt_header_name,
+                            sizeof(mlt_header_name)) == 0) {
+                ::header.erase(it);
+                continue;
+            }
+
             ::header.erase(it);
+
+            if (fprintf(client->fcontent,
+                        "%s: %s\r\n",
+                        header_key,
+                        header_value) < 0) {
+                std::cerr << "Error: Unable to write header" << std::endl;
+                return SMFIS_TEMPFAIL;
+            }
 
             break;
         }
@@ -359,9 +372,6 @@ sfsistat mlfi_eom(SMFICTX *ctx) {
         return SMFIS_TEMPFAIL;
     }
 
-    smfi_addheader(
-            ctx, util::ccp("X-Sigh"), util::ccp("S/MIME signing milter"));
-
     smime::Smime smimeMsg {ctx};
 
     smimeMsg.sign();
@@ -373,11 +383,22 @@ sfsistat mlfi_eom(SMFICTX *ctx) {
     } else {
         std::string logmsg = "Signed mail for email address "
                              + std::string(client->sessionData["envfrom"]);
+        if (::debug)
+            std::cout << logmsg << std::endl;
         syslog(LOG_NOTICE, "%s", logmsg.c_str());
     }
 
+#if 0
     if (::debug)
         std::cout << smimeMsg;
+#endif
+
+    if (client->genericError)
+        return SMFIS_TEMPFAIL;
+
+    smfi_addheader(
+            ctx, util::ccp(mlt_header_name), util::ccp(
+                    "S/MIME sigh milter - version " + std::string(::version)));
 
     return SMFIS_CONTINUE;
 }
@@ -640,6 +661,7 @@ int main(int argc, const char *argv[]) {
     }
 
     // Define headers
+    ::header.push_back(mlt_header_name);
     ::header.push_back("MIME-Version");
     ::header.push_back("Content-ID");
     ::header.push_back("Content-Type");

@@ -37,7 +37,9 @@ namespace smime {
         void sign(void);
 
     private:
-        void changeHeader(const std::string &, const std::string &);
+        int addHeader(const std::string &, const std::string &);
+
+        int removeHeader(const std::string &);
 
         SMFICTX *ctx;
 

@@ -18,7 +18,7 @@
 #include <sstream>
 #include <boost/filesystem.hpp>
 
-#include "util.h"
+#include "common.h"
 #include "client.h"
 #include "mapfile.h"
 
@@ -111,9 +111,12 @@ namespace smime {
         X509 *scert = nullptr;
         EVP_PKEY *skey = nullptr;
         PKCS7 *p7 = nullptr;
-        bool done = false;
+        bool noerror = true;
 
         int flags = PKCS7_DETACHED | PKCS7_STREAM;
+
+        // Header iterator for marked headers
+        std::vector<char *>::iterator hit;
 
         OpenSSL_add_all_algorithms();
         ERR_load_crypto_strings();
@@ -121,49 +124,77 @@ namespace smime {
         // S/MIME certificate
         tbio = BIO_new_file(cert.string().c_str(), "r");
         if (!tbio)
-            goto end;
+            noerror = false;
 
-        scert = PEM_read_bio_X509(tbio, nullptr, 0, nullptr);
+        if (noerror) {
+            scert = PEM_read_bio_X509(tbio, nullptr, 0, nullptr);
+            if (!scert)
+                noerror = false;
+        }
 
         // S/MIME key
-        tbio = BIO_new_file(key.string().c_str(), "r");
-        if (!tbio)
-            goto end;
+        if (noerror) {
+            tbio = BIO_new_file(key.string().c_str(), "r");
+            if (!tbio)
+                noerror = false;
+        }
 
-        skey = PEM_read_bio_PrivateKey(tbio, nullptr, 0, nullptr);
-        if (!scert || !skey)
-            goto end;
+        if (noerror) {
+            skey = PEM_read_bio_PrivateKey(tbio, nullptr, 0, nullptr);
+            if (!skey)
+                noerror = false;
+        }
 
         // Loading mail content from temp file
-        in = BIO_new_file(client->getTempFile().c_str(), "r");
-        if (!in)
-            goto end;
+        if (noerror) {
+            in = BIO_new_file(client->getTempFile().c_str(), "r");
+            if (!in)
+                noerror = false;
+        }
 
         // Signing
-        p7 = PKCS7_sign(scert, skey, nullptr, in, flags);
-        if (!p7)
-            goto end;
+        if (noerror) {
+            p7 = PKCS7_sign(scert, skey, nullptr, in, flags);
+            if (!p7)
+                noerror = false;
+        }
 
-        out = BIO_new(BIO_s_mem());
-        if (!out)
-            goto end;
+        if (noerror) {
+            out = BIO_new(BIO_s_mem());
+            if (!out)
+                noerror = false;
+        }
 
         // Write out S/MIME message
-        if (!SMIME_write_PKCS7(out, p7, in, flags))
-            goto end;
+        if (noerror) {
+            if (!SMIME_write_PKCS7(out, p7, in, flags))
+                noerror = false;
+        }
 
-        // Successfully signed an email
-        smimeSigned = done = true;
+        // Remove original headers
+        if (noerror) {
+            for (hit = client->markedHeaders.begin();
+                 hit != client->markedHeaders.end();
+                 hit++) {
+                if (removeHeader(*hit) == MI_FAILURE) {
+                    std::cerr << "Error: Unable to remove header " << *hit
+                               << std::endl;
+                    noerror = false;
+                }
+            }
+        }
 
-        end:
-
-        if (!done) {
+        if (noerror) {
+            // Successfully signed an email
+            smimeSigned = true;
+        } else {
             std::cerr << "Error: Signing data" << std::endl;
             u_long e = ERR_get_error();
             char buf[120];
             (void) ERR_error_string(e, buf);
             std::cerr << buf << std::endl;
             syslog(LOG_ERR, "%s", buf);
+            client->genericError = true;
         }
 
         // Cleanup
@@ -224,15 +255,22 @@ namespace smime {
 
     // Private
 
-    void Smime::changeHeader(const std::string &headerk,
-                             const std::string &headerv) {
+    int Smime::addHeader(const std::string &headerk,
+                         const std::string &headerv) {
         int result = smfi_chgheader(ctx,
                                     util::ccp(headerk.c_str()),
                                     1,
                                     util::ccp(headerv.c_str()));
-        if (result == MI_FAILURE)
-            std::cerr << "Error: Could not change header " << headerk
-                      << " to value " << headerv
-                      << std::endl;
+
+        return result;
+    }
+
+    int Smime::removeHeader(const std::string &headerk) {
+        int result = smfi_chgheader(ctx,
+                                    util::ccp(headerk.c_str()),
+                                    1,
+                                    nullptr);
+
+        return result;
     }
 }  // namespace smime

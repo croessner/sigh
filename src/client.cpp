@@ -39,16 +39,25 @@ namespace mlt {
               }()),
               mailflags(mailflags::TYPE_NONE),
               optionalPreamble(true),
+              genericError(false),
               fcontentStatus(false) { /* empty */ }
 
     Client::~Client() {
         try {
             cleanup();
+
+            // Clear session data
+            std::map<std::string, char *>::iterator mit;
+            for (mit=sessionData.begin(); mit!=sessionData.end(); mit++)
+                free(mit->second);
+
+            // Clear list of marked headers
+            std::vector<char *>::iterator vit;
+            for (vit=markedHeaders.begin(); vit!=markedHeaders.end(); vit++)
+                free(*vit);
         }
-        catch (...) {
-            /*
-             * Catch all exceptions. We do not execute any further code here!
-             */
+        catch (const std::exception &e) {
+            std::cerr << "Error: " << e.what() << std::endl;
         }
     }
 

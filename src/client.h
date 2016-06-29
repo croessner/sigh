@@ -18,6 +18,7 @@
 #include <cstdio>
 #include <fstream>
 #include <memory>
+#include <vector>
 
 #include <boost/filesystem.hpp>
 
@@ -69,6 +70,9 @@ namespace mlt {
         //! \brief SMTP session data map
         std::map<std::string, char *> sessionData;
 
+        //! \brief List of headers to be removed from original message
+        std::vector<char *> markedHeaders;
+
         //! \brief Email content gets stored in a temp file
         FILE *fcontent;
 
@@ -84,6 +88,8 @@ namespace mlt {
         u_int8_t mailflags;
 
         bool optionalPreamble;
+
+        bool genericError;
 
     private:
         /*!
