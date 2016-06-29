@@ -20,8 +20,6 @@
 #include <vector>
 #include <boost/algorithm/string.hpp>
 
-#define MAX_BODY_LINE_LENGTH    80
-
 namespace smime {
     using boost::split;
     using boost::trim;
