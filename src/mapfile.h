@@ -2,7 +2,7 @@
  *
  * \brief Read a map file
  *
- * \author Christian Rößner <c@roessner.co>
+ * \author Christian Roessner <c@roessner.co>
  * \version 1606.1.0
  * \date 2016-06-10
   * \copyright Copyright 2016 Christian Roessner <c@roessner.co>
@@ -27,31 +27,78 @@ namespace mapfile {
 
     typedef std::vector<std::string> split_t;
 
+    /*!
+     * \brief Type selector. S/MIME certificate or key
+     */
     enum class Smime {CERT, KEY};
 
+    /*!
+     * \brief Load a map file
+     *
+     * Load a map file containing email addresses as keys and certificate
+     * paths as value. It is loaded on startup and can be reloaded by
+     * signaling the milter with SIGHUP.
+     */
     class Map {
     public:
+        /*!
+         * \brief Constructor
+         *
+         * Find S/MIME cert and key based on an email address
+         */
         Map(const std::string &);
 
+        /*!
+         * \brief Destructor
+         */
         virtual ~Map() = default;
 
+        /*!
+         * \brief Read a map file and store data internally in certStore
+         */
         static void readMap(const std::string&);
 
+        /*!
+         * \brief A certificate or key
+         */
         template <Smime>
         const std::string & getSmimeFilename(void);
 
     private:
+        /*!
+         * \brief Setter which checks for a cert and key
+         *
+         * Prepare internal attributes smimeCert and smimeKey
+         */
         template <Smime, size_t pos=0>
         void setSmimeFile(const split_t &);
 
+        /*!
+         * \brief System wide certificate store
+         *
+         * When data gets read by readMap(), all recognized table records are
+         * stored into this map. No further splitting or testing is done here.
+         */
         static certstore_t certStore;
 
+        /*!
+         * \brief Flag to signal, if a map file could be loaded
+         */
         static bool loaded;
 
+        /*!
+         * \brief The MAIL FROM address as used as a key for the certStore
+         */
         const std::string mailFrom;
 
+        /*!
+         * \brief S/MIME certificate of a user
+         */
         std::string smimeCert;
 
+        /*!
+         * \brief S/MIME key of a user
+         */
         std::string smimeKey;
     };
 

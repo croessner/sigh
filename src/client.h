@@ -2,7 +2,7 @@
  *
  * \brief Declare the class Client that is used to store SMTP session data
  *
- * \author Christian Rößner <c@roessner.co>
+ * \author Christian Roessner <c@roessner.co>
  * \version 1606.1.0
  * \date 2016-06-10
   * \copyright Copyright 2016 Christian Roessner <c@roessner.co>
@@ -29,6 +29,11 @@ extern bool debug;
 namespace mlt {
     typedef u_long counter_t;
 
+    /*!
+     * \brief Internal detecting flags
+     *
+     * We check for certain headers. ANDing and ORing makes processing faster
+     */
     enum mailflags {
         TYPE_NONE        = 0x0,
         TYPE_MIME        = 0x1,
@@ -61,12 +66,25 @@ namespace mlt {
          */
         bool createContentFile(const std::string &);
 
+        /*!
+         * \brief The path to a temp file for a connected client
+         */
         inline const std::string & getTempFile() const {
             return temp.string();
         }
 
+        /*!
+         * \brief Status of the temp file
+         */
         inline bool getFcontentStatus(void) { return fcontentStatus; }
 
+        /*!
+         * \brief Clear existing data structures for a client
+         *
+         * We mus always clear data structures at the end of each message,
+         * as a connected client might send more than one message in a SMTP
+         * session.
+         */
         void reset(void);
 
         //! \brief SMTP session data map
@@ -87,10 +105,13 @@ namespace mlt {
         //! \brief Identifier that a client got after a connect
         const counter_t id;
 
+        //! \brief Current detected header flags ORed together
         u_int8_t mailflags;
 
+        //! \brief Flag that signals an existing MIME preamble
         bool optionalPreamble;
 
+        //! \brief If an error occurs while signing the mail, this flag is set
         bool genericError;
 
     private:
@@ -121,8 +142,8 @@ namespace mlt {
         //! \brief Name of a temporary file for email content
         fs::path temp;
 
+        //! \brief The status of the tem file. Closed (false), open (true)
         bool fcontentStatus;
-
     };
 }  // namespace mlt
 

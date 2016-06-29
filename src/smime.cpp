@@ -2,7 +2,7 @@
  *
  * \brief Handle S/MIME messages
  *
- * \author Christian Rößner <c@roessner.co>
+ * \author Christian Roessner <c@roessner.co>
  * \version 1606.1.0
  * \date 2016-06-10
   * \copyright Copyright 2016 Christian Roessner <c@roessner.co>
@@ -29,7 +29,6 @@ namespace smime {
 
     Smime::Smime(SMFICTX *ctx)
             : ctx(ctx),
-              loaded(true),
               smimeSigned(false),
               mailFrom([&]() {
                   auto *client = util::mlfipriv(ctx);
@@ -45,9 +44,6 @@ namespace smime {
               }()) { /* empty */ }
 
     void Smime::sign() {
-        if (!isLoaded())
-            return;
-
         // Null-mailer or unknown
         if (mailFrom.empty())
             return;
@@ -107,7 +103,12 @@ namespace smime {
         PKCS7 *p7 = nullptr;
         BUF_MEM *outmem = nullptr;
 
+        // If an error occurs, we directly abort further processing
         bool noerror = true;
+
+        // This flag indicates, if we can grab error messages provided by
+        // OpenSSL and lg these to syslog
+        bool cryptoerror = false;
 
         int flags = PKCS7_DETACHED | PKCS7_STREAM;
 
@@ -119,52 +120,68 @@ namespace smime {
 
         // S/MIME certificate
         tbio = BIO_new_file(cert.string().c_str(), "r");
-        if (!tbio)
+        if (!tbio) {
             noerror = false;
+            cryptoerror = true;
+        }
 
         if (noerror) {
             scert = PEM_read_bio_X509(tbio, nullptr, 0, nullptr);
-            if (!scert)
+            if (!scert) {
                 noerror = false;
+                cryptoerror = true;
+            }
         }
 
         // S/MIME key
         if (noerror) {
             tbio = BIO_new_file(key.string().c_str(), "r");
-            if (!tbio)
+            if (!tbio) {
                 noerror = false;
+                cryptoerror = true;
+            }
         }
 
         if (noerror) {
             skey = PEM_read_bio_PrivateKey(tbio, nullptr, 0, nullptr);
-            if (!skey)
+            if (!skey) {
                 noerror = false;
+                cryptoerror = true;
+            }
         }
 
         // Loading mail content from temp file
         if (noerror) {
             in = BIO_new_file(client->getTempFile().c_str(), "r");
-            if (!in)
+            if (!in) {
                 noerror = false;
+                cryptoerror = true;
+            }
         }
 
         // Signing
         if (noerror) {
             p7 = PKCS7_sign(scert, skey, nullptr, in, flags);
-            if (!p7)
+            if (!p7) {
                 noerror = false;
+                cryptoerror = true;
+            }
         }
 
         if (noerror) {
             out = BIO_new(BIO_s_mem());
-            if (!out)
+            if (!out) {
                 noerror = false;
+                cryptoerror = true;
+            }
         }
 
         // Write out S/MIME message
         if (noerror) {
-            if (!SMIME_write_PKCS7(out, p7, in, flags))
+            if (!SMIME_write_PKCS7(out, p7, in, flags)) {
                 noerror = false;
+                cryptoerror = true;
+            }
         }
 
         // Remove original headers
@@ -189,6 +206,7 @@ namespace smime {
                     std::cerr << "Error: Reading header line from BIO"
                               << std::endl;
                     noerror = false;
+                    cryptoerror = true;
                     break;
                 }
 
@@ -227,6 +245,7 @@ namespace smime {
                 std::cerr << "Error: Unable to get body from PKCS#7"
                           << std::endl;
                 noerror = false;
+                cryptoerror = true;
             } else
                 (void) BIO_set_close(out, BIO_NOCLOSE);
         }
@@ -245,7 +264,9 @@ namespace smime {
         if (noerror) {
             // Successfully signed an email
             smimeSigned = true;
-        } else {
+        }
+
+        if (cryptoerror) {
             std::cerr << "Error: Signing data" << std::endl;
             u_long e = ERR_get_error();
             char buf[120];

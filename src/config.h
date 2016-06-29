@@ -2,7 +2,7 @@
  *
  * \brief Handle a milter configuration file
  *
- * \author Christian Rößner <c@roessner.co>
+ * \author Christian Roessner <c@roessner.co>
  * \version 1606.1.0
  * \date 2016-06-10
   * \copyright Copyright 2016 Christian Roessner <c@roessner.co>
@@ -42,7 +42,7 @@ namespace conf {
         virtual ~MilterCfg() = default;
 
         /*!
-         * \brief Return a configuration value
+         * \brief A configuration value
          */
         template <typename T=std::string, typename R=T>
         R getValue(const std::string &);

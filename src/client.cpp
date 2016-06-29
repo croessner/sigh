@@ -7,7 +7,7 @@
  * The data itself is organized in a list. An instance of this class is
  * carried with the smfi_getpriv() routine.
  *
- * \author Christian Rößner <c@roessner.co>
+ * \author Christian Roessner <c@roessner.co>
  * \version 1606.1.0
  * \date 2016-06-10
   * \copyright Copyright 2016 Christian Roessner <c@roessner.co>
