@@ -42,7 +42,7 @@ namespace smime {
                   }
                   else
                       return std::string();
-              }()) { /* empty */ };
+              }()) { /* empty */ }
 
     void Smime::sign() {
         if (!isLoaded())
@@ -64,7 +64,7 @@ namespace smime {
             std::string value {client->sessionData["Content-Type"]};
             std::size_t found;
 
-            for (int i=0; i<contentType.size(); i++) {
+            for (std::size_t i=0; i<contentType.size(); i++) {
                 found = value.find(contentType.at(i));
                 if (found != std::string::npos) {
                     signedOrEncrypted = true;
@@ -228,7 +228,7 @@ namespace smime {
                           << std::endl;
                 noerror = false;
             } else
-                BIO_set_close(out, BIO_NOCLOSE);
+                (void) BIO_set_close(out, BIO_NOCLOSE);
         }
 
         if (noerror) {

@@ -37,7 +37,7 @@ namespace mlt {
 
                   return uniqueId;
               }()),
-              mailflags(mailflags::TYPE_NONE),
+              mailflags(mlt::mailflags::TYPE_NONE),
               optionalPreamble(true),
               genericError(false),
               fcontentStatus(false) { /* empty */ }
@@ -112,7 +112,7 @@ namespace mlt {
             }
         markedHeaders.clear();
 
-        this->mailflags = mailflags::TYPE_NONE;
+        mailflags = mlt::mailflags::TYPE_NONE;
         optionalPreamble = true;
         genericError = false;
         fcontentStatus = false;
