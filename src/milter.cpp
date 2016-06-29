@@ -218,8 +218,7 @@ sfsistat mlfi_header(
 
     auto *client = util::mlfipriv(ctx);
 
-    std::vector<std::string>::iterator it = ::header.begin();
-    for (std::size_t i=0; i<::header.size(); i++, it++) {
+    for (std::size_t i=0; i<::header.size(); i++) {
         if (strncasecmp(header_key, ::header.at(i).c_str(),
                         ::header.at(i).size()) == 0) {
             char *hk = strdup(header_key);
@@ -253,11 +252,8 @@ sfsistat mlfi_header(
             if (strncasecmp(header_key,
                             mlt_header_name,
                             sizeof(mlt_header_name)) == 0) {
-                ::header.erase(it);
                 continue;
             }
-
-            ::header.erase(it);
 
             if (fprintf(client->fcontent,
                         "%s: %s\r\n",
