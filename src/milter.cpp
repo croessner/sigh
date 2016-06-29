@@ -388,17 +388,17 @@ sfsistat mlfi_eom(SMFICTX *ctx) {
         syslog(LOG_NOTICE, "%s", logmsg.c_str());
     }
 
-#if 0
-    if (::debug)
-        std::cout << smimeMsg;
-#endif
-
     if (client->genericError)
         return SMFIS_TEMPFAIL;
 
     smfi_addheader(
             ctx, util::ccp(mlt_header_name), util::ccp(
                     "S/MIME sigh milter - version " + std::string(::version)));
+
+    /*
+     * Clear data structures
+     */
+    client->reset();
 
     return SMFIS_CONTINUE;
 }
@@ -427,8 +427,10 @@ sfsistat mlfi_close(SMFICTX *ctx) {
                   << " socket=" << client->ipAndPort << std::endl;
     }
 
-    delete client;
-    smfi_setpriv(ctx, nullptr);
+    if (client != nullptr) {
+        delete client;
+        smfi_setpriv(ctx, nullptr);
+    }
 
     return SMFIS_ACCEPT;
 }

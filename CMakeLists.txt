@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.3)
 project(mymilter)
 
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -pipe -std=c++14 -Wall -pedantic")
-set(SOURCE_FILES src/milter.cpp src/client.h src/client.cpp src/milter.h src/config.h src/config.cpp src/smime.h src/smime.cpp src/util.h src/mapfile.h src/mapfile.cpp)
+set(SOURCE_FILES src/milter.cpp src/client.h src/client.cpp src/milter.h src/config.h src/config.cpp src/smime.h src/smime.cpp src/common.h src/mapfile.h src/mapfile.cpp)
 
 # Homebrew
 if (APPLE)

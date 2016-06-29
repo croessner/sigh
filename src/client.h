@@ -67,6 +67,8 @@ namespace mlt {
 
         inline bool getFcontentStatus(void) { return fcontentStatus; }
 
+        void reset(void);
+
         //! \brief SMTP session data map
         std::map<std::string, char *> sessionData;
 

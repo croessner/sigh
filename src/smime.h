@@ -11,19 +11,27 @@
 #ifndef SRC_SMIME_H_
 #define SRC_SMIME_H_
 
+#include <libmilter/mfapi.h>
+
 #include <string>
 #include <iostream>
 #include <fstream>
 #include <memory>
-#include <libmilter/mfapi.h>
+#include <vector>
+#include <boost/algorithm/string.hpp>
 
 #define MAX_BODY_LINE_LENGTH    80
 
 namespace smime {
+    using boost::split;
+    using boost::trim;
+    using boost::is_any_of;
+    using boost::token_compress_on;
+
+    typedef std::vector<std::string> split_t;
+
     class Smime {
     public:
-        friend std::ostream & operator<<(std::ostream &, const Smime &);
-
         Smime(SMFICTX *);
 
         ~Smime(void) = default;
@@ -31,8 +39,6 @@ namespace smime {
         inline bool isLoaded(void) const { return loaded; }
 
         inline bool isSmimeSigned(void) const { return smimeSigned; }
-
-        const std::unique_ptr<std::string> bodyAsString() const;
 
         void sign(void);
 

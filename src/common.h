@@ -16,7 +16,11 @@
 
 #include "client.h"
 
+//! \brief Header field name for this milter
 const char mlt_header_name[] = "X-Sigh";
+
+//! \brief RFC2822, 2.1.1 Maximum header length per line
+const u_int32_t max_header_length = 998 + 2;  // Data, CR+LF
 
 namespace util {
     /*!

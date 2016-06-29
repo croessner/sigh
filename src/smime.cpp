@@ -27,12 +27,6 @@ namespace fs = boost::filesystem;
 namespace smime {
     // Public
 
-    std::ostream & operator<<(std::ostream &out, const Smime &sm) {
-        out << *sm.bodyAsString();
-
-        return out;
-    }
-
     Smime::Smime(SMFICTX *ctx)
             : ctx(ctx),
               loaded(true),
@@ -111,6 +105,8 @@ namespace smime {
         X509 *scert = nullptr;
         EVP_PKEY *skey = nullptr;
         PKCS7 *p7 = nullptr;
+        BUF_MEM *outmem = nullptr;
+
         bool noerror = true;
 
         int flags = PKCS7_DETACHED | PKCS7_STREAM;
@@ -185,6 +181,68 @@ namespace smime {
         }
 
         if (noerror) {
+            while (true) {
+                char line[max_header_length];
+                split_t header;
+
+                if (BIO_gets(out, line, max_header_length) < 0) {
+                    std::cerr << "Error: Reading header line from BIO"
+                              << std::endl;
+                    noerror = false;
+                    break;
+                }
+
+                /*
+                 * Found empty line
+                 *
+                 * Normally we would expect CRLF, but the BIO currently only
+                 * contains a LF at the end of header lines.
+                 */
+                if ((strcmp(line, "\n") == 0) || (strcmp(line, "\r\n")) == 0)
+                    break;
+
+                // Add PKCS#7 header to message
+                split(header, line, is_any_of(":"), token_compress_on);
+                if (header.size() != 2) {
+                    std::cerr << "Error: Broken header line in PKCS#7"
+                              << std::endl;
+                    noerror = false;
+                    break;
+                }
+                // Remove white space
+                trim(header.at(1));
+                if (addHeader(header.at(0), header.at(1)) == MI_FAILURE) {
+                    std::cerr << "Error: Unable to add header " << header.at(0)
+                              << std::endl;
+                    noerror = false;
+                    break;
+                }
+            }
+        }
+
+        // Finally replace the body
+        if (noerror) {
+            BIO_get_mem_ptr(out, &outmem);
+            if (outmem == nullptr) {
+                std::cerr << "Error: Unable to get body from PKCS#7"
+                          << std::endl;
+                noerror = false;
+            } else
+                BIO_set_close(out, BIO_NOCLOSE);
+        }
+
+        if (noerror) {
+            if (smfi_replacebody(
+                    ctx,
+                    (unsigned char *) (outmem->data),
+                    (int) outmem->length) != MI_SUCCESS) {
+                std::cerr << "Error: Could not replace message body"
+                          << std::endl;
+                noerror = false;
+            }
+        }
+
+        if (noerror) {
             // Successfully signed an email
             smimeSigned = true;
         } else {
@@ -211,46 +269,9 @@ namespace smime {
             BIO_free(out);
         if (tbio)
             BIO_free(tbio);
-    }
 
-    const std::unique_ptr<std::string> Smime::bodyAsString() const {
-        if (!isLoaded() || !smimeSigned)
-            return std::make_unique<std::string>(std::string());
-
-        auto *client = util::mlfipriv(ctx);
-        char line[MAX_BODY_LINE_LENGTH];
-        char eol[] = "\r\n";
-        std::string dst = std::string();
-        bool first_blank_line = false;
-
-        if (client->getFcontentStatus()) {
-            if (fseek(client->fcontent, 0L, SEEK_SET) == -1) {
-                perror("Error: Unwilling to rewind temp file");
-                return std::make_unique<std::string>(std::string());
-            }
-
-            clearerr(client->fcontent);
-
-            while (fgets(line, sizeof(line), client->fcontent)) {
-                if (!first_blank_line) {
-                    if (strncmp(line, eol, 1) == 0) {
-                        first_blank_line = true;
-                        continue;
-                    } else
-                        continue;
-                }
-                dst += std::string(line);
-            }
-
-            if (ferror(client->fcontent) != 0) {
-                perror("Error: Unable to read from temp file");
-                return std::make_unique<std::string>(std::string());
-            }
-        }
-
-        auto body = std::make_unique<std::string>(dst);
-
-        return body;
+        if (outmem)
+            BUF_MEM_free(outmem);
     }
 
     // Private
@@ -259,7 +280,7 @@ namespace smime {
                          const std::string &headerv) {
         int result = smfi_chgheader(ctx,
                                     util::ccp(headerk.c_str()),
-                                    1,
+                                    0,
                                     util::ccp(headerv.c_str()));
 
         return result;

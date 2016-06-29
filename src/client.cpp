@@ -49,12 +49,14 @@ namespace mlt {
             // Clear session data
             std::map<std::string, char *>::iterator mit;
             for (mit=sessionData.begin(); mit!=sessionData.end(); mit++)
-                free(mit->second);
+                if (mit->second != nullptr)
+                    free(mit->second);
 
             // Clear list of marked headers
             std::vector<char *>::iterator vit;
             for (vit=markedHeaders.begin(); vit!=markedHeaders.end(); vit++)
-                free(*vit);
+                if (*vit != nullptr)
+                    free(*vit);
         }
         catch (const std::exception &e) {
             std::cerr << "Error: " << e.what() << std::endl;
@@ -89,6 +91,31 @@ namespace mlt {
         }
 
         return fcontent != nullptr;
+    }
+
+    void Client::reset() {
+        // Clear session data
+        std::map<std::string, char *>::iterator mit;
+        for (mit=sessionData.begin(); mit!=sessionData.end(); mit++)
+            if (mit->second != nullptr) {
+                free(mit->second);
+                mit->second = nullptr;
+            }
+        sessionData.clear();
+
+        // Clear list of marked headers
+        std::vector<char *>::iterator vit;
+        for (vit=markedHeaders.begin(); vit!=markedHeaders.end(); vit++)
+            if (*vit != nullptr) {
+                free(*vit);
+                *vit = nullptr;
+            }
+        markedHeaders.clear();
+
+        this->mailflags = mailflags::TYPE_NONE;
+        optionalPreamble = true;
+        genericError = false;
+        fcontentStatus = false;
     }
 
     // Private
