@@ -442,9 +442,16 @@ sfsistat mlfi_negotiate(
         u_long *pf0, u_long *pf1, u_long *pf2, u_long *pf3) {
     assert(ctx != nullptr);
 
-    // The milter needs the ADDHEADER capability from the MTA
     if ((f0 & SMFIF_ADDHDRS) != 0)
         *pf0 |= SMFIF_ADDHDRS;
+    else
+        return SMFIS_REJECT;
+    if ((f0 & SMFIF_CHGHDRS) != 0)
+        *pf0 |= SMFIF_CHGHDRS;
+    else
+        return SMFIS_REJECT;
+    if ((f0 & SMFIF_CHGBODY) != 0)
+        *pf0 |= SMFIF_CHGBODY;
     else
         return SMFIS_REJECT;
 
