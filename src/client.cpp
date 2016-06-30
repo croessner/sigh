@@ -131,10 +131,24 @@ namespace mlt {
     const std::string Client::prepareIPandPort(struct sockaddr *hostaddr) {
         assert(hostaddr != nullptr);
 
+        socklen_t hostaddrlen;
+
+        switch (hostaddr->sa_family) {
+            case AF_INET:
+                hostaddrlen = sizeof(sockaddr_in);
+                break;
+            case AF_INET6:
+                hostaddrlen = sizeof(sockaddr_in6);
+                break;
+            default:
+                std::cerr << "Error: " << gai_strerror(EAI_FAMILY) << std::endl;
+                return "unknown";
+        }
+
         std::string ipport;
         char clienthost[NI_MAXHOST];
         char clientport[NI_MAXSERV];
-        int result = getnameinfo(hostaddr, sizeof(*hostaddr),
+        int result = getnameinfo(hostaddr, hostaddrlen,
                                  clienthost, sizeof(clienthost),
                                  clientport, sizeof(clientport),
                                  NI_NUMERICHOST | NI_NUMERICSERV);
