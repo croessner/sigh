@@ -141,9 +141,11 @@ sfsistat mlfi_connect(SMFICTX *ctx, char *hostname, struct sockaddr *hostaddr) {
 
     if (::debug) {
         std::cout << "id=" << client->id
-                  << " connect from hostname=" << client->hostname
+                  << " connect from hostname="
                   << " socket=" << client->ipAndPort << std::endl;
     }
+    syslog(LOG_INFO, "id=%ld connect from hostname=%s socket=%s",
+           client->id, client->hostname.c_str(), client->ipAndPort.c_str());
 
     return SMFIS_CONTINUE;
 }
@@ -233,7 +235,7 @@ sfsistat mlfi_header(
                 return SMFIS_TEMPFAIL;
             }
 
-            client->markedHeaders.push_back(hk);
+            client->markedHeaders.push_back(std::make_pair(hk, hv));
 
             // Found MIME-VERSION
             if (strncasecmp(header_key,
@@ -381,7 +383,7 @@ sfsistat mlfi_eom(SMFICTX *ctx) {
                              + std::string(client->sessionData["envfrom"]);
         if (::debug)
             std::cout << logmsg << std::endl;
-        syslog(LOG_NOTICE, "%s", logmsg.c_str());
+        syslog(LOG_INFO, "%s", logmsg.c_str());
     }
 
     if (client->genericError)
@@ -419,14 +421,14 @@ sfsistat mlfi_close(SMFICTX *ctx) {
 
     if (::debug) {
         std::cout << "id=" << client->id
-                  << " disconnect from hostname=" << client->hostname
+                  << " disconnect from hostname="
                   << " socket=" << client->ipAndPort << std::endl;
     }
+    syslog(LOG_INFO, "id=%ld disconnect from hostname=%s socket=%s",
+           client->id, client->hostname.c_str(), client->ipAndPort.c_str());
 
-    if (client != nullptr) {
-        delete client;
-        smfi_setpriv(ctx, nullptr);
-    }
+    delete client;
+    smfi_setpriv(ctx, nullptr);
 
     return SMFIS_ACCEPT;
 }

@@ -11,7 +11,8 @@
 #ifndef SRC_CLIENT_H_
 #define SRC_CLIENT_H_
 
-#include <libnet.h>
+#include <sys/socket.h>
+#include <netdb.h>
 
 #include <string>
 #include <map>
@@ -19,6 +20,7 @@
 #include <fstream>
 #include <memory>
 #include <vector>
+#include <utility>
 
 #include <boost/filesystem.hpp>
 
@@ -28,6 +30,8 @@ extern bool debug;
 
 namespace mlt {
     typedef u_long counter_t;
+    typedef std::map<std::string, char *> sessionData_t;
+    typedef std::vector<std::pair<char *, char*>> markedHeaders_t;
 
     /*!
      * \brief Internal detecting flags
@@ -88,10 +92,14 @@ namespace mlt {
         void reset(void);
 
         //! \brief SMTP session data map
-        std::map<std::string, char *> sessionData;
+        sessionData_t sessionData;
 
-        //! \brief List of headers to be removed from original message
-        std::vector<char *> markedHeaders;
+        /*!
+         * \brief List of headers to be removed from original message
+         *
+         * First element is a mail header key, second its header value
+         */
+        markedHeaders_t markedHeaders;
 
         //! \brief Email content gets stored in a temp file
         FILE *fcontent;

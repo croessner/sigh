@@ -47,16 +47,19 @@ namespace mlt {
             cleanup();
 
             // Clear session data
-            std::map<std::string, char *>::iterator mit;
+            sessionData_t::iterator mit;
             for (mit=sessionData.begin(); mit!=sessionData.end(); mit++)
                 if (mit->second != nullptr)
                     free(mit->second);
 
             // Clear list of marked headers
-            std::vector<char *>::iterator vit;
-            for (vit=markedHeaders.begin(); vit!=markedHeaders.end(); vit++)
-                if (*vit != nullptr)
-                    free(*vit);
+            markedHeaders_t::iterator hit;
+            for (hit=markedHeaders.begin(); hit!=markedHeaders.end(); hit++) {
+                if (hit->first != nullptr)
+                    free(hit->first);
+                if (hit->second != nullptr)
+                    free(hit->second);
+            }
         }
         catch (const std::exception &e) {
             std::cerr << "Error: " << e.what() << std::endl;
@@ -95,7 +98,7 @@ namespace mlt {
 
     void Client::reset() {
         // Clear session data
-        std::map<std::string, char *>::iterator mit;
+        sessionData_t::iterator mit;
         for (mit=sessionData.begin(); mit!=sessionData.end(); mit++)
             if (mit->second != nullptr) {
                 free(mit->second);
@@ -104,12 +107,17 @@ namespace mlt {
         sessionData.clear();
 
         // Clear list of marked headers
-        std::vector<char *>::iterator vit;
-        for (vit=markedHeaders.begin(); vit!=markedHeaders.end(); vit++)
-            if (*vit != nullptr) {
-                free(*vit);
-                *vit = nullptr;
+        markedHeaders_t::iterator hit;
+        for (hit=markedHeaders.begin(); hit!=markedHeaders.end(); hit++) {
+            if (hit->first != nullptr) {
+                free(hit->first);
+                hit->first = nullptr;
             }
+            if (hit->second != nullptr) {
+                free(hit->second);
+                hit->second = nullptr;
+            }
+        }
         markedHeaders.clear();
 
         mailflags = mlt::mailflags::TYPE_NONE;
@@ -137,12 +145,12 @@ namespace mlt {
         } else {
             switch (hostaddr->sa_family) {
                 case AF_INET:
-                    ipport = std::string {clienthost} + ":"
-                             + std::string {clientport};
+                    ipport = std::string(clienthost) + ":"
+                             + std::string(clientport);
                     break;
                 case AF_INET6:
-                    ipport = "[" + std::string {clienthost} + "]:"
-                             + std::string {clientport};
+                    ipport = "[" + std::string(clienthost) + "]:"
+                             + std::string(clientport);
                     break;
                 default:
                     ipport = "unknown";

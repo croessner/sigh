@@ -37,8 +37,14 @@ namespace conf {
      */
     class MilterCfg {
     public:
+        /*!
+         * \brief Constructor
+         */
         MilterCfg(const po::variables_map &);
 
+        /*!
+         * \brief Destructor
+         */
         virtual ~MilterCfg() = default;
 
         /*!

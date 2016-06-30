@@ -15,7 +15,9 @@
 #include <openssl/err.h>
 #include <syslog.h>
 
+#include <string>
 #include <sstream>
+#include <utility>
 #include <boost/filesystem.hpp>
 
 #include "common.h"
@@ -52,26 +54,36 @@ namespace smime {
         bool signedOrEncrypted = false;
         std::vector<std::string> contentType;
 
+        // Header iterator for marked headers
+        markedHeaders_t::iterator hit, hbit, heit;
+        hbit = client->markedHeaders.begin();
+        heit = client->markedHeaders.end();
+
         contentType.push_back("multipart/signed");
         contentType.push_back("multipart/encrypted");
         contentType.push_back("application/pkcs7-mime");
 
-        if (client->sessionData.count("Content-Type") == 1) {
-            std::string value {client->sessionData["Content-Type"]};
-            std::size_t found;
+        for (hit=hbit; hit!=heit; hit++) {
+            if (strcasecmp(hit->first, "Content-Type") == 0) {
+                std::string value(hit->second);
+                std::size_t found;
 
-            for (std::size_t i=0; i<contentType.size(); i++) {
-                found = value.find(contentType.at(i));
-                if (found != std::string::npos) {
-                    signedOrEncrypted = true;
-                    break;
+                for (std::size_t i=0; i<contentType.size(); i++) {
+                    found = value.find(contentType.at(i));
+                    if (found != std::string::npos) {
+                        signedOrEncrypted = true;
+                        break;
+                    }
                 }
+                break;
             }
         }
 
         if (signedOrEncrypted) {
-            const char logmsg[] = "Message already signed or encrypted";
-            syslog(LOG_NOTICE, "%s", logmsg);
+            std::string logmsg = "Message already signed or encrypted for ";
+            logmsg += "email address <" + mailFrom + ">";
+
+            syslog(LOG_INFO, "%s", logmsg.c_str());
             return;
         }
 
@@ -111,9 +123,6 @@ namespace smime {
         bool cryptoerror = false;
 
         int flags = PKCS7_DETACHED | PKCS7_STREAM;
-
-        // Header iterator for marked headers
-        std::vector<char *>::iterator hit;
 
         OpenSSL_add_all_algorithms();
         ERR_load_crypto_strings();
@@ -189,8 +198,8 @@ namespace smime {
             for (hit = client->markedHeaders.begin();
                  hit != client->markedHeaders.end();
                  hit++) {
-                if (removeHeader(*hit) == MI_FAILURE) {
-                    std::cerr << "Error: Unable to remove header " << *hit
+                if (removeHeader(hit->first) == MI_FAILURE) {
+                    std::cerr << "Error: Unable to remove header " << hit->first
                                << std::endl;
                     noerror = false;
                 }

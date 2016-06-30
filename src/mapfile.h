@@ -24,7 +24,6 @@ namespace mapfile {
     using boost::token_compress_on;
 
     typedef std::map<std::string, std::string> certstore_t;
-
     typedef std::vector<std::string> split_t;
 
     /*!
