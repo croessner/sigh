@@ -113,6 +113,11 @@ namespace smime {
          */
         std::string mailFrom;
     };
+
+    /*!
+     * \brief A deleter function used as a functor
+     */
+    void stackOfX509Deleter(STACK_OF(X509) *ptr);
 }  // namespace smime
 
 #endif  // SRC_SMIME_H_

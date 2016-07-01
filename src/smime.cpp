@@ -99,11 +99,14 @@ namespace smime {
          * Signing starts here
          */
 
+
         using BIO_ptr = std::unique_ptr<BIO, decltype(&::BIO_free)>;
         using X509_ptr = std::unique_ptr<X509, decltype(&::X509_free)>;
         using EVP_PKEY_ptr = std::unique_ptr<EVP_PKEY,
                 decltype(&::EVP_PKEY_free)>;
         using PKCS7_ptr = std::unique_ptr<PKCS7, decltype(&::PKCS7_free)>;
+        using STACK_OF_X509_ptr = std::unique_ptr<STACK_OF(X509),
+                decltype(&stackOfX509Deleter)>;
 
         int flags = PKCS7_DETACHED | PKCS7_STREAM;
 
@@ -140,7 +143,8 @@ namespace smime {
         }
 
         // Try to load intermediate certificates
-        STACK_OF(X509) *chain = loadIntermediate(cert.string());
+        STACK_OF_X509_ptr chain(loadIntermediate(cert.string()),
+                                stackOfX509Deleter);
 
         // Loading mail content from temp file
         BIO_ptr in(BIO_new_file(client->getTempFile().c_str(), "r"),
@@ -151,7 +155,7 @@ namespace smime {
         }
 
         // Signing
-        PKCS7_ptr p7(PKCS7_sign(scert.get(), skey.get(), chain, in.get(),
+        PKCS7_ptr p7(PKCS7_sign(scert.get(), skey.get(), chain.get(), in.get(),
                                 flags),
                      ::PKCS7_free);
         if (!p7) {
@@ -243,9 +247,6 @@ namespace smime {
         smimeSigned = true;
 
         // Cleanup
-        if (chain)
-            sk_X509_free(chain);
-
         if (outmem)
             BUF_MEM_free(outmem);
     }
@@ -264,7 +265,7 @@ namespace smime {
         return smfi_chgheader(ctx, util::ccp(headerk.c_str()), 1, nullptr);
     }
 
-    void Smime::handleSSLError() {
+    void Smime::handleSSLError(void) {
         auto *client = util::mlfipriv(ctx);
         u_long e = ERR_get_error();
         char buf[120];
@@ -332,5 +333,9 @@ namespace smime {
             sk_X509_INFO_free(stackInfo);
 
         return stack;
+    }
+
+    void stackOfX509Deleter(STACK_OF(X509) *ptr) {
+        sk_X509_free(ptr);
     }
 }  // namespace smime
