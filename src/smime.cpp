@@ -99,15 +99,6 @@ namespace smime {
          * Signing starts here
          */
 
-
-        using BIO_ptr = std::unique_ptr<BIO, decltype(&::BIO_free)>;
-        using X509_ptr = std::unique_ptr<X509, decltype(&::X509_free)>;
-        using EVP_PKEY_ptr = std::unique_ptr<EVP_PKEY,
-                decltype(&::EVP_PKEY_free)>;
-        using PKCS7_ptr = std::unique_ptr<PKCS7, decltype(&::PKCS7_free)>;
-        using STACK_OF_X509_ptr = std::unique_ptr<STACK_OF(X509),
-                decltype(&stackOfX509Deleter)>;
-
         int flags = PKCS7_DETACHED | PKCS7_STREAM;
 
         OpenSSL_add_all_algorithms();
@@ -143,8 +134,7 @@ namespace smime {
         }
 
         // Try to load intermediate certificates
-        STACK_OF_X509_ptr chain(loadIntermediate(cert.string()),
-                                stackOfX509Deleter);
+        STACK_OF_X509_ptr chain = loadIntermediate(cert.string());
 
         // Loading mail content from temp file
         BIO_ptr in(BIO_new_file(client->getTempFile().c_str(), "r"),
@@ -277,65 +267,62 @@ namespace smime {
         client->genericError = true;
     }
 
-    STACK_OF(X509) * Smime::loadIntermediate(const std::string &file) {
-        using BIO_ptr = std::unique_ptr<BIO, decltype(&::BIO_free)>;
-
-        STACK_OF(X509_INFO) *stackInfo = nullptr;
-        STACK_OF(X509) *stack = nullptr;
-        X509_INFO *xi;
+    STACK_OF_X509_ptr Smime::loadIntermediate(const std::string &file) {
         int num;
         int numCerts;
+
+        // Dummy return statement
+        STACK_OF_X509_ptr empty(nullptr, stackOfX509Deleter);
 
         BIO_ptr bio(BIO_new_file(file.c_str(), "r"), ::BIO_free);
         if (!bio) {
             handleSSLError();
-            goto end;
+            return empty;
         }
 
-        stackInfo = PEM_X509_INFO_read_bio(
-                bio.get(), nullptr, nullptr, nullptr);
+        STACK_OF_X509_INFO_ptr stackInfo(PEM_X509_INFO_read_bio(
+                bio.get(), nullptr, nullptr, nullptr), stackOfX509InfoDeleter);
         if (!stackInfo) {
             handleSSLError();
-            goto end;
+            return empty;
         }
 
-        stack = sk_X509_new_null();
+        STACK_OF_X509_ptr stack(sk_X509_new_null(), stackOfX509Deleter);
         if (!stack) {
             handleSSLError();
-            goto end;
+            return empty;
         }
 
-        num = sk_X509_INFO_num(stackInfo);
+        num = sk_X509_INFO_num(stackInfo.get());
         if(num < 0) {
-            sk_X509_free(stack);
-            stack = nullptr;
-            goto end;
+            return empty;
         }
 
-        while (sk_X509_INFO_num(stackInfo)) {
-            xi = sk_X509_INFO_shift(stackInfo);
-            if (xi->x509 != nullptr) {
-                sk_X509_push(stack, xi->x509);
-                xi->x509 = nullptr;
-            }
-            X509_INFO_free(xi);
+        while (sk_X509_INFO_num(stackInfo.get())) {
+            X509_INFO_ptr xi(sk_X509_INFO_shift(stackInfo.get()),
+                             ::X509_INFO_free);
+            if (xi->x509 != nullptr)
+                sk_X509_push(stack.get(), xi->x509);
         }
 
-        numCerts = sk_X509_num(stack);
+        numCerts = sk_X509_num(stack.get());
         if(numCerts == 0) {
-            sk_X509_free(stack);
-            stack = nullptr;
+            sk_X509_free(stack.get());
+            return empty;
         }
-
-        end:
-
-        if (stackInfo)
-            sk_X509_INFO_free(stackInfo);
 
         return stack;
     }
 
+    // Free functions
+
     void stackOfX509Deleter(STACK_OF(X509) *ptr) {
-        sk_X509_free(ptr);
+        if (ptr != nullptr)
+            sk_X509_free(ptr);
+    }
+
+    void stackOfX509InfoDeleter(STACK_OF(X509_INFO) *ptr) {
+        if (ptr != nullptr)
+            sk_X509_INFO_free(ptr);
     }
 }  // namespace smime
