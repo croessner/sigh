@@ -36,7 +36,7 @@ namespace mapfile {
         }
 
         try {
-            std::ifstream store {mapfile};
+            std::ifstream store(mapfile);
             std::string line;
             std::string keycol, valuecol;
 

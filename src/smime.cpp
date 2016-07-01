@@ -86,7 +86,7 @@ namespace smime {
          * or signed elsewhere.
          */
 
-        mapfile::Map email {mailFrom};
+        mapfile::Map email(mailFrom);
 
         auto cert = fs::path(email.getSmimeFilename<mapfile::Smime::CERT>());
         auto key = fs::path(email.getSmimeFilename<mapfile::Smime::KEY>());
@@ -98,22 +98,13 @@ namespace smime {
 
         /*
          * Signing starts here
-         *
-         * This code block is based on an example from openssl/demos/smime
          */
 
-        BIO *in = nullptr, *out = nullptr, *tbio = nullptr;
-        X509 *scert = nullptr;
-        EVP_PKEY *skey = nullptr;
-        PKCS7 *p7 = nullptr;
-        BUF_MEM *outmem = nullptr;
-
-        // If an error occurs, we directly abort further processing
-        bool noerror = true;
-
-        // This flag indicates, if we can grab error messages provided by
-        // OpenSSL and lg these to syslog
-        bool cryptoerror = false;
+        using BIO_ptr = std::unique_ptr<BIO, decltype(&::BIO_free)>;
+        using X509_ptr = std::unique_ptr<X509, decltype(&::X509_free)>;
+        using EVP_PKEY_ptr = std::unique_ptr<EVP_PKEY,
+                                             decltype(&::EVP_PKEY_free)>;
+        using PKCS7_ptr = std::unique_ptr<PKCS7, decltype(&::PKCS7_free)>;
 
         int flags = PKCS7_DETACHED | PKCS7_STREAM;
 
@@ -121,176 +112,135 @@ namespace smime {
         ERR_load_crypto_strings();
 
         // S/MIME certificate
-        tbio = BIO_new_file(cert.string().c_str(), "r");
-        if (!tbio) {
-            noerror = false;
-            cryptoerror = true;
+        BIO_ptr tbio1(BIO_new_file(cert.string().c_str(), "r"), ::BIO_free);
+        if (!tbio1) {
+            handleSSLError();
+            return;
         }
 
-        if (noerror) {
-            scert = PEM_read_bio_X509(tbio, nullptr, 0, nullptr);
-            if (!scert) {
-                noerror = false;
-                cryptoerror = true;
-            }
+        X509_ptr scert(PEM_read_bio_X509(tbio1.get(), nullptr, 0, nullptr),
+                       ::X509_free);
+        if (!scert) {
+            handleSSLError();
+            return;
         }
 
         // S/MIME key
-        if (noerror) {
-            tbio = BIO_new_file(key.string().c_str(), "r");
-            if (!tbio) {
-                noerror = false;
-                cryptoerror = true;
-            }
+        BIO_ptr tbio2(BIO_new_file(key.string().c_str(), "r"), ::BIO_free);
+        if (!tbio2) {
+            handleSSLError();
+            return;
         }
 
-        if (noerror) {
-            skey = PEM_read_bio_PrivateKey(tbio, nullptr, 0, nullptr);
-            if (!skey) {
-                noerror = false;
-                cryptoerror = true;
-            }
+        EVP_PKEY_ptr skey(
+                PEM_read_bio_PrivateKey(tbio2.get(), nullptr, 0, nullptr),
+                ::EVP_PKEY_free);
+        if (!skey) {
+            handleSSLError();
+            return;
         }
 
         // Loading mail content from temp file
-        if (noerror) {
-            in = BIO_new_file(client->getTempFile().c_str(), "r");
-            if (!in) {
-                noerror = false;
-                cryptoerror = true;
-            }
+        BIO_ptr in(BIO_new_file(client->getTempFile().c_str(), "r"),
+                   ::BIO_free);
+        if (!in) {
+            handleSSLError();
+            return;
         }
 
         // Signing
-        if (noerror) {
-            p7 = PKCS7_sign(scert, skey, nullptr, in, flags);
-            if (!p7) {
-                noerror = false;
-                cryptoerror = true;
-            }
+        PKCS7_ptr p7(PKCS7_sign(scert.get(), skey.get(), nullptr, in.get(),
+                                flags),
+                     ::PKCS7_free);
+        if (!p7) {
+            handleSSLError();
+            return;
         }
 
-        if (noerror) {
-            out = BIO_new(BIO_s_mem());
-            if (!out) {
-                noerror = false;
-                cryptoerror = true;
-            }
+        BIO_ptr out(BIO_new(BIO_s_mem()), ::BIO_free);
+        if (!out) {
+            handleSSLError();
+            return;
         }
 
         // Write out S/MIME message
-        if (noerror) {
-            if (!SMIME_write_PKCS7(out, p7, in, flags)) {
-                noerror = false;
-                cryptoerror = true;
-            }
+        if (!SMIME_write_PKCS7(out.get(), p7.get(), in.get(), flags)) {
+            handleSSLError();
+            return;
         }
 
         // Remove original headers
-        if (noerror) {
-            for (auto &it : client->markedHeaders) {
-                if (removeHeader(it.first) == MI_FAILURE) {
-                    std::cerr << "Error: Unable to remove header " << it.first
-                               << std::endl;
-                    noerror = false;
-                }
+        for (auto &it : client->markedHeaders) {
+            if (removeHeader(it.first) == MI_FAILURE) {
+                std::cerr << "Error: Unable to remove header " << it.first
+                           << std::endl;
+                client->genericError = true;
+                return;
             }
         }
 
-        if (noerror) {
-            while (true) {
-                char line[max_header_length];
-                split_t header;
+        while (true) {
+            char line[max_header_length];
+            split_t header;
 
-                if (BIO_gets(out, line, max_header_length) < 0) {
-                    std::cerr << "Error: Reading header line from BIO"
-                              << std::endl;
-                    noerror = false;
-                    cryptoerror = true;
-                    break;
-                }
+            if (BIO_gets(out.get(), line, max_header_length) < 0) {
+                std::cerr << "Error: Reading header line from BIO"
+                          << std::endl;
+                handleSSLError();
+                return;
+            }
 
-                /*
-                 * Found empty line
-                 *
-                 * Normally we would expect CRLF, but the BIO currently only
-                 * contains a LF at the end of header lines.
-                 */
-                if ((strcmp(line, "\n") == 0) || (strcmp(line, "\r\n")) == 0)
-                    break;
+            /*
+             * Found empty line
+             *
+             * Normally we would expect CRLF, but the BIO currently only
+             * contains a LF at the end of header lines.
+             */
+            if ((strcmp(line, "\n") == 0) || (strcmp(line, "\r\n")) == 0)
+                break;
 
-                // Add PKCS#7 header to message
-                split(header, line, is_any_of(":"), token_compress_on);
-                if (header.size() != 2) {
-                    std::cerr << "Error: Broken header line in PKCS#7"
-                              << std::endl;
-                    noerror = false;
-                    break;
-                }
-                // Remove white space
-                trim(header.at(1));
-                if (addHeader(header.at(0), header.at(1)) == MI_FAILURE) {
-                    std::cerr << "Error: Unable to add header " << header.at(0)
-                              << std::endl;
-                    noerror = false;
-                    break;
-                }
+            // Add PKCS#7 header to message
+            split(header, line, is_any_of(":"), token_compress_on);
+            if (header.size() != 2) {
+                std::cerr << "Error: Broken header line in PKCS#7"
+                          << std::endl;
+                client->genericError = true;
+                return;
+            }
+            // Remove white space
+            trim(header.at(1));
+            if (addHeader(header.at(0), header.at(1)) == MI_FAILURE) {
+                std::cerr << "Error: Unable to add header " << header.at(0)
+                          << std::endl;
+                client->genericError = true;
+                return;
             }
         }
 
         // Finally replace the body
-        if (noerror) {
-            BIO_get_mem_ptr(out, &outmem);
-            if (outmem == nullptr) {
-                std::cerr << "Error: Unable to get body from PKCS#7"
-                          << std::endl;
-                noerror = false;
-                cryptoerror = true;
-            } else
-                (void) BIO_set_close(out, BIO_NOCLOSE);
+        BUF_MEM *outmem = nullptr;
+        BIO_get_mem_ptr(out.get(), &outmem);
+        if (outmem == nullptr) {
+            std::cerr << "Error: Unable to get body from PKCS#7"
+                      << std::endl;
+            handleSSLError();
+            return;
+        } else
+            (void) BIO_set_close(out.get(), BIO_NOCLOSE);
+
+        if (smfi_replacebody(
+                ctx,
+                (unsigned char *) (outmem->data),
+                (int) outmem->length) != MI_SUCCESS) {
+            std::cerr << "Error: Could not replace message body"
+                      << std::endl;
+            return;
         }
 
-        if (noerror) {
-            if (smfi_replacebody(
-                    ctx,
-                    (unsigned char *) (outmem->data),
-                    (int) outmem->length) != MI_SUCCESS) {
-                std::cerr << "Error: Could not replace message body"
-                          << std::endl;
-                noerror = false;
-            }
-        }
-
-        if (noerror) {
-            // Successfully signed an email
-            smimeSigned = true;
-        }
-
-        if (cryptoerror) {
-            std::cerr << "Error: Signing data" << std::endl;
-            u_long e = ERR_get_error();
-            char buf[120];
-            (void) ERR_error_string(e, buf);
-            std::cerr << buf << std::endl;
-            syslog(LOG_ERR, "%s", buf);
-            client->genericError = true;
-        }
+        // Successfully signed an email
+        smimeSigned = true;
 
         // Cleanup
-        if (p7)
-            PKCS7_free(p7);
-        if (scert)
-            X509_free(scert);
-        if (skey)
-            EVP_PKEY_free(skey);
-
-        if (in)
-            BIO_free(in);
-        if (out)
-            BIO_free(out);
-        if (tbio)
-            BIO_free(tbio);
-
         if (outmem)
             BUF_MEM_free(outmem);
     }
@@ -299,20 +249,25 @@ namespace smime {
 
     int Smime::addHeader(const std::string &headerk,
                          const std::string &headerv) {
-        int result = smfi_chgheader(ctx,
-                                    util::ccp(headerk.c_str()),
-                                    0,
-                                    util::ccp(headerv.c_str()));
-
-        return result;
+        return smfi_chgheader(ctx,
+                              util::ccp(headerk.c_str()),
+                              0,
+                              util::ccp(headerv.c_str()));
     }
 
     int Smime::removeHeader(const std::string &headerk) {
-        int result = smfi_chgheader(ctx,
-                                    util::ccp(headerk.c_str()),
-                                    1,
-                                    nullptr);
+        return smfi_chgheader(ctx, util::ccp(headerk.c_str()), 1, nullptr);
+    }
 
-        return result;
+    void Smime::handleSSLError() {
+        auto *client = util::mlfipriv(ctx);
+        u_long e = ERR_get_error();
+        char buf[120];
+        (void) ERR_error_string(e, buf);
+
+        std::cerr << "Error: Signing data: " << buf << std::endl;
+        syslog(LOG_ERR, "%s", buf);
+
+        client->genericError = true;
     }
 }  // namespace smime

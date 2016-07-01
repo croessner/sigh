@@ -24,7 +24,7 @@ extern bool debug;
 namespace conf {
     using boost::any_cast;
 
-    typedef std::map<std::string, boost::any> config_t;
+    using config_t = std::map<std::string, boost::any>;
 
     /*!
      * \brief Read a configuration file and store settings
@@ -45,7 +45,7 @@ namespace conf {
         /*!
          * \brief Destructor
          */
-        virtual ~MilterCfg() = default;
+        virtual ~MilterCfg(void) = default;
 
         /*!
          * \brief A configuration value

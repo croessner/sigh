@@ -29,9 +29,9 @@ namespace fs = boost::filesystem;
 extern bool debug;
 
 namespace mlt {
-    typedef u_long counter_t;
-    typedef std::map<std::string, std::string> sessionData_t;
-    typedef std::vector<std::pair<std::string, std::string>> markedHeaders_t;
+    using counter_t = u_long;
+    using sessionData_t = std::map<std::string, std::string>;
+    using markedHeaders_t = std::vector<std::pair<std::string, std::string>>;
 
     /*!
      * \brief Internal detecting flags
@@ -59,7 +59,7 @@ namespace mlt {
          *
          * On client disconnect, a temporary file will be removed
          */
-        virtual ~Client();
+        virtual ~Client(void);
 
         /*!
          * \brief Create a new temporary file for each email

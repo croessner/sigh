@@ -23,8 +23,8 @@ namespace mapfile {
     using boost::is_any_of;
     using boost::token_compress_on;
 
-    typedef std::map<std::string, std::string> certstore_t;
-    typedef std::vector<std::string> split_t;
+    using certstore_t =  std::map<std::string, std::string>;
+    using split_t =  std::vector<std::string>;
 
     /*!
      * \brief Type selector. S/MIME certificate or key
@@ -50,7 +50,7 @@ namespace mapfile {
         /*!
          * \brief Destructor
          */
-        virtual ~Map() = default;
+        virtual ~Map(void) = default;
 
         /*!
          * \brief Read a map file and store data internally in certStore

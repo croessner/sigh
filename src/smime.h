@@ -26,7 +26,7 @@ namespace smime {
     using boost::is_any_of;
     using boost::token_compress_on;
 
-    typedef std::vector<std::string> split_t;
+    using split_t =  std::vector<std::string>;
 
     /*!
      * \brief S/MIME handling
@@ -69,6 +69,14 @@ namespace smime {
          * embedded inside the new message body.
          */
         int removeHeader(const std::string &);
+
+        /*!
+         * \brief Error handler for S/MIME signing problems
+         *
+         * This method is always called, if some signing operations failed.
+         * It also sets the genericError flag for the connected client.
+         */
+        void handleSSLError(void);
 
         /*!
          * \brief The current client context that was created on connect

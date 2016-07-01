@@ -43,10 +43,10 @@ namespace po = boost::program_options;
 bool debug = false;
 
 //! \brief The internal milter name
-static char miltername[] = "sigh";
+static std::string miltername("sigh");
 
 //! \brief Version number
-static const char version[] = "1606.1.0";
+static const std::string version("1606.1.0");
 
 //! \brief  Configuration options for the milter
 static std::unique_ptr<conf::MilterCfg> config(nullptr);
@@ -58,7 +58,7 @@ static std::vector<std::string> header;
  * \brief Global data structure that maps all callbacks
  */
 static struct smfiDesc smfilter = {
-        miltername,         // filter name
+        util::ccp(miltername.c_str()),  // filter name
         SMFI_VERSION,       // version code -- do not change
         0,                  // flags
         mlfi_connect,       // connection info filter
@@ -125,7 +125,7 @@ sfsistat mlfi_connect(SMFICTX *ctx, char *hostname, struct sockaddr *hostaddr) {
     mlt::Client *client;
 
     try {
-        client = new mlt::Client {hostname, hostaddr};
+        client = new mlt::Client(hostname, hostaddr);
     }
     catch (const std::bad_alloc& ba) {
         std::cerr << "Error: bad_alloc caught: " << ba.what() << std::endl;
@@ -227,22 +227,18 @@ sfsistat mlfi_header(
                     std::make_pair(header_key, header_value));
 
             // Found MIME-VERSION
-            if (strncasecmp(header_key,
-                            std::string("MIME-Version").c_str(),
-                            12) == 0)
+            if (strncasecmp(header_key, "MIME-Version", 12) == 0)
                 client->mailflags |= mlt::mailflags::TYPE_MIME;
 
             // Found multipart message
-            if (strncasecmp(header_key,
-                            std::string("Content-Type").c_str(),
-                            12) == 0)
+            if (strncasecmp(header_key, "Content-Type", 12) == 0)
                 if (strstr(header_value, "multipart/") != nullptr)
                     client->mailflags |= mlt::mailflags::TYPE_MULTIPART;
 
             // Found out own header
             if (strncasecmp(header_key,
-                            mlt_header_name,
-                            sizeof(mlt_header_name)) == 0) {
+                            mlt_header_name.c_str(),
+                            sizeof(*mlt_header_name.c_str())) == 0) {
                 continue;
             }
 
@@ -313,7 +309,7 @@ sfsistat mlfi_body(SMFICTX *ctx, unsigned char *bodyp, size_t body_len) {
          * Remove preamble, RFC2046, 5.1.1
          */
         while (strncmp(
-                (const char *) bodyit, std::string("--").c_str(), 2) != 0) {
+                (const char *) bodyit, "--", 2) != 0) {
             if (remaining > 0) {
                 bodyit++;
                 remaining--;
@@ -359,7 +355,7 @@ sfsistat mlfi_eom(SMFICTX *ctx) {
         return SMFIS_TEMPFAIL;
     }
 
-    smime::Smime smimeMsg {ctx};
+    smime::Smime smimeMsg(ctx);
 
     smimeMsg.sign();
     if (!smimeMsg.isSmimeSigned()) {
@@ -369,7 +365,7 @@ sfsistat mlfi_eom(SMFICTX *ctx) {
         return SMFIS_CONTINUE;
     } else {
         std::string logmsg = "Signed mail for email address "
-                             + std::string(client->sessionData["envfrom"]);
+                             + client->sessionData["envfrom"];
         if (::debug)
             std::cout << logmsg << std::endl;
         syslog(LOG_INFO, "%s", logmsg.c_str());
@@ -495,7 +491,7 @@ static void signalHandler(int sig) {
             std::cout << "Caught signal " << sig
                       << ". Reloading mapfile" << std::endl;
             mapfile::Map::readMap(::config->getValue("mapfile"));
-            syslog(LOG_NOTICE, "%s", std::string("Mapfile reloaded").c_str());
+            syslog(LOG_NOTICE, "%s", "Mapfile reloaded");
             break;
         default:
         { /* empty */ }
@@ -646,7 +642,7 @@ int main(int argc, const char *argv[]) {
 #endif  // !__APPLE__ && !defined _NOT_DAEMONIZE
 
     if (!mfpidfile.empty()) {
-        std::ofstream out {mfpidfile};
+        std::ofstream out(mfpidfile);
         if (out.is_open()) {
             out << getpid();
             if (::debug)
@@ -673,12 +669,10 @@ int main(int argc, const char *argv[]) {
         catch (...) { /* empty */ }
     }};
 
-    openlog(miltername, LOG_CONS | LOG_NDELAY | LOG_PID, LOG_MAIL);
+    openlog(miltername.c_str(), LOG_CONS | LOG_NDELAY | LOG_PID, LOG_MAIL);
 
-    std::string logmsg = "Starting milter "
-                         + std::string(miltername)
-                         + " - version "
-                         + std::string(version);
+    std::string logmsg = "Starting milter " + miltername
+                         + " - version " + version;
     syslog(LOG_NOTICE, "%s", logmsg.c_str());
 
     // Wait for signals
