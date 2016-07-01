@@ -27,7 +27,6 @@ namespace smime {
     using boost::token_compress_on;
 
     typedef std::vector<std::string> split_t;
-    typedef std::vector<std::pair<char *, char*>> markedHeaders_t;
 
     /*!
      * \brief S/MIME handling

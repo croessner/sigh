@@ -59,12 +59,10 @@ namespace smime {
         contentType.push_back("application/pkcs7-mime");
 
         for (auto &it : client->markedHeaders) {
-            if (strcasecmp(it.first, "Content-Type") == 0) {
-                std::string value(it.second);
+            if (it.first == "Content-Type") {
                 std::size_t found;
-
                 for (std::size_t i=0; i<contentType.size(); i++) {
-                    found = value.find(contentType.at(i));
+                    found = it.second.find(contentType.at(i));
                     if (found != std::string::npos) {
                         signedOrEncrypted = true;
                         break;

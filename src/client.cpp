@@ -45,21 +45,7 @@ namespace mlt {
     Client::~Client() {
         try {
             cleanup();
-
-            // Clear session data
-            for (auto &it : sessionData)
-                if (it.second != nullptr)
-                    free(it.second);
-
-            // Clear list of marked headers
-            for (auto &it : markedHeaders) {
-                if (it.first != nullptr)
-                    free(it.first);
-                if (it.second != nullptr)
-                    free(it.second);
-            }
-        }
-        catch (const std::exception &e) {
+        } catch (const std::exception &e) {
             std::cerr << "Error: " << e.what() << std::endl;
         }
     }
@@ -95,27 +81,8 @@ namespace mlt {
     }
 
     void Client::reset() {
-        // Clear session data
-        for (auto &it : sessionData)
-            if (it.second != nullptr) {
-                free(it.second);
-                it.second = nullptr;
-            }
         sessionData.clear();
-
-        // Clear list of marked headers
-        for (auto &it : markedHeaders) {
-            if (it.first != nullptr) {
-                free(it.first);
-                it.first = nullptr;
-            }
-            if (it.second != nullptr) {
-                free(it.second);
-                it.second = nullptr;
-            }
-        }
         markedHeaders.clear();
-
         mailflags = mlt::mailflags::TYPE_NONE;
         optionalPreamble = true;
         genericError = false;

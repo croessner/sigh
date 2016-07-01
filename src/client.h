@@ -30,8 +30,8 @@ extern bool debug;
 
 namespace mlt {
     typedef u_long counter_t;
-    typedef std::map<std::string, char *> sessionData_t;
-    typedef std::vector<std::pair<char *, char*>> markedHeaders_t;
+    typedef std::map<std::string, std::string> sessionData_t;
+    typedef std::vector<std::pair<std::string, std::string>> markedHeaders_t;
 
     /*!
      * \brief Internal detecting flags

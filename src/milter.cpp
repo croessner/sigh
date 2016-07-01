@@ -223,19 +223,8 @@ sfsistat mlfi_header(
     for (std::size_t i=0; i<::header.size(); i++) {
         if (strncasecmp(header_key, ::header.at(i).c_str(),
                         ::header.at(i).size()) == 0) {
-            char *hk = strdup(header_key);
-            if (hk == nullptr) {
-                perror("Error: Unable to copy header_key");
-                return SMFIS_TEMPFAIL;
-            }
-
-            char *hv = strdup(header_value);
-            if (hv == nullptr) {
-                perror("Error: Unable to copy header_value");
-                return SMFIS_TEMPFAIL;
-            }
-
-            client->markedHeaders.push_back(std::make_pair(hk, hv));
+            client->markedHeaders.push_back(
+                    std::make_pair(header_key, header_value));
 
             // Found MIME-VERSION
             if (strncasecmp(header_key,
