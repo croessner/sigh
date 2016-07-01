@@ -10,7 +10,6 @@
 
 #include "smime.h"
 
-#include <openssl/pem.h>
 #include <openssl/pkcs7.h>
 #include <openssl/err.h>
 #include <syslog.h>
@@ -103,7 +102,7 @@ namespace smime {
         using BIO_ptr = std::unique_ptr<BIO, decltype(&::BIO_free)>;
         using X509_ptr = std::unique_ptr<X509, decltype(&::X509_free)>;
         using EVP_PKEY_ptr = std::unique_ptr<EVP_PKEY,
-                                             decltype(&::EVP_PKEY_free)>;
+                decltype(&::EVP_PKEY_free)>;
         using PKCS7_ptr = std::unique_ptr<PKCS7, decltype(&::PKCS7_free)>;
 
         int flags = PKCS7_DETACHED | PKCS7_STREAM;
@@ -140,6 +139,9 @@ namespace smime {
             return;
         }
 
+        // Try to load intermediate certificates
+        STACK_OF(X509) *chain = loadIntermediate(cert.string());
+
         // Loading mail content from temp file
         BIO_ptr in(BIO_new_file(client->getTempFile().c_str(), "r"),
                    ::BIO_free);
@@ -149,7 +151,7 @@ namespace smime {
         }
 
         // Signing
-        PKCS7_ptr p7(PKCS7_sign(scert.get(), skey.get(), nullptr, in.get(),
+        PKCS7_ptr p7(PKCS7_sign(scert.get(), skey.get(), chain, in.get(),
                                 flags),
                      ::PKCS7_free);
         if (!p7) {
@@ -241,6 +243,9 @@ namespace smime {
         smimeSigned = true;
 
         // Cleanup
+        if (chain)
+            sk_X509_free(chain);
+
         if (outmem)
             BUF_MEM_free(outmem);
     }
@@ -269,5 +274,63 @@ namespace smime {
         syslog(LOG_ERR, "%s", buf);
 
         client->genericError = true;
+    }
+
+    STACK_OF(X509) * Smime::loadIntermediate(const std::string &file) {
+        using BIO_ptr = std::unique_ptr<BIO, decltype(&::BIO_free)>;
+
+        STACK_OF(X509_INFO) *stackInfo = nullptr;
+        STACK_OF(X509) *stack = nullptr;
+        X509_INFO *xi;
+        int num;
+        int numCerts;
+
+        BIO_ptr bio(BIO_new_file(file.c_str(), "r"), ::BIO_free);
+        if (!bio) {
+            handleSSLError();
+            goto end;
+        }
+
+        stackInfo = PEM_X509_INFO_read_bio(
+                bio.get(), nullptr, nullptr, nullptr);
+        if (!stackInfo) {
+            handleSSLError();
+            goto end;
+        }
+
+        stack = sk_X509_new_null();
+        if (!stack) {
+            handleSSLError();
+            goto end;
+        }
+
+        num = sk_X509_INFO_num(stackInfo);
+        if(num < 0) {
+            sk_X509_free(stack);
+            stack = nullptr;
+            goto end;
+        }
+
+        while (sk_X509_INFO_num(stackInfo)) {
+            xi = sk_X509_INFO_shift(stackInfo);
+            if (xi->x509 != nullptr) {
+                sk_X509_push(stack, xi->x509);
+                xi->x509 = nullptr;
+            }
+            X509_INFO_free(xi);
+        }
+
+        numCerts = sk_X509_num(stack);
+        if(numCerts == 0) {
+            sk_X509_free(stack);
+            stack = nullptr;
+        }
+
+        end:
+
+        if (stackInfo)
+            sk_X509_INFO_free(stackInfo);
+
+        return stack;
     }
 }  // namespace smime

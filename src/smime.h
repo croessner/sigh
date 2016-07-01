@@ -12,6 +12,7 @@
 #define SRC_SMIME_H_
 
 #include <libmilter/mfapi.h>
+#include <openssl/pem.h>
 
 #include <string>
 #include <iostream>
@@ -77,6 +78,17 @@ namespace smime {
          * It also sets the genericError flag for the connected client.
          */
         void handleSSLError(void);
+
+        /*!
+         * \brief Load intermediate S/MIME certificates
+         *
+         * The S/MIME certificate may have several intermediate certficates
+         * concatenated. Try to load them for signing.
+         *
+         * As this function uses a jump label, the code is separated from the
+         * main signing routine sign().
+         */
+        STACK_OF(X509) * loadIntermediate(const std::string &);
 
         /*!
          * \brief The current client context that was created on connect
