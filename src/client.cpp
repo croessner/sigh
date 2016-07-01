@@ -47,18 +47,16 @@ namespace mlt {
             cleanup();
 
             // Clear session data
-            sessionData_t::iterator mit;
-            for (mit=sessionData.begin(); mit!=sessionData.end(); mit++)
-                if (mit->second != nullptr)
-                    free(mit->second);
+            for (auto &it : sessionData)
+                if (it.second != nullptr)
+                    free(it.second);
 
             // Clear list of marked headers
-            markedHeaders_t::iterator hit;
-            for (hit=markedHeaders.begin(); hit!=markedHeaders.end(); hit++) {
-                if (hit->first != nullptr)
-                    free(hit->first);
-                if (hit->second != nullptr)
-                    free(hit->second);
+            for (auto &it : markedHeaders) {
+                if (it.first != nullptr)
+                    free(it.first);
+                if (it.second != nullptr)
+                    free(it.second);
             }
         }
         catch (const std::exception &e) {
@@ -98,24 +96,22 @@ namespace mlt {
 
     void Client::reset() {
         // Clear session data
-        sessionData_t::iterator mit;
-        for (mit=sessionData.begin(); mit!=sessionData.end(); mit++)
-            if (mit->second != nullptr) {
-                free(mit->second);
-                mit->second = nullptr;
+        for (auto &it : sessionData)
+            if (it.second != nullptr) {
+                free(it.second);
+                it.second = nullptr;
             }
         sessionData.clear();
 
         // Clear list of marked headers
-        markedHeaders_t::iterator hit;
-        for (hit=markedHeaders.begin(); hit!=markedHeaders.end(); hit++) {
-            if (hit->first != nullptr) {
-                free(hit->first);
-                hit->first = nullptr;
+        for (auto &it : markedHeaders) {
+            if (it.first != nullptr) {
+                free(it.first);
+                it.first = nullptr;
             }
-            if (hit->second != nullptr) {
-                free(hit->second);
-                hit->second = nullptr;
+            if (it.second != nullptr) {
+                free(it.second);
+                it.second = nullptr;
             }
         }
         markedHeaders.clear();

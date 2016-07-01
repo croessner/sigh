@@ -54,18 +54,13 @@ namespace smime {
         bool signedOrEncrypted = false;
         std::vector<std::string> contentType;
 
-        // Header iterator for marked headers
-        markedHeaders_t::iterator hit, hbit, heit;
-        hbit = client->markedHeaders.begin();
-        heit = client->markedHeaders.end();
-
         contentType.push_back("multipart/signed");
         contentType.push_back("multipart/encrypted");
         contentType.push_back("application/pkcs7-mime");
 
-        for (hit=hbit; hit!=heit; hit++) {
-            if (strcasecmp(hit->first, "Content-Type") == 0) {
-                std::string value(hit->second);
+        for (auto &it : client->markedHeaders) {
+            if (strcasecmp(it.first, "Content-Type") == 0) {
+                std::string value(it.second);
                 std::size_t found;
 
                 for (std::size_t i=0; i<contentType.size(); i++) {
@@ -195,11 +190,9 @@ namespace smime {
 
         // Remove original headers
         if (noerror) {
-            for (hit = client->markedHeaders.begin();
-                 hit != client->markedHeaders.end();
-                 hit++) {
-                if (removeHeader(hit->first) == MI_FAILURE) {
-                    std::cerr << "Error: Unable to remove header " << hit->first
+            for (auto &it : client->markedHeaders) {
+                if (removeHeader(it.first) == MI_FAILURE) {
+                    std::cerr << "Error: Unable to remove header " << it.first
                                << std::endl;
                     noerror = false;
                 }
