@@ -51,3 +51,5 @@ target_link_libraries (
         ${crypto_LIBRARIES}
         ${Boost_LIBRARIES}
 )
+
+install(PROGRAMS sigh ${CMAKE_CURRENT_BINARY_DIR}/sigh DESTINATION sbin)
