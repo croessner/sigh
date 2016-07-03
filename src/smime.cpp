@@ -134,7 +134,7 @@ namespace smime {
         }
 
         // Try to load intermediate certificates
-        STACK_OF_X509_ptr chain = loadIntermediate(cert.string());
+        STACK_OF_X509_ptr chain(loadIntermediate(cert.string()));
 
         // Loading mail content from temp file
         BIO_ptr in(BIO_new_file(client->getTempFile().c_str(), "r"),
@@ -272,7 +272,9 @@ namespace smime {
         int numCerts;
 
         // Dummy return statement
-        STACK_OF_X509_ptr empty(nullptr, stackOfX509Deleter);
+        STACK_OF_X509_ptr empty(nullptr, [](STACK_OF(X509) *dummy) {
+            /* empty */
+        });
 
         BIO_ptr bio(BIO_new_file(file.c_str(), "r"), ::BIO_free);
         if (!bio) {
@@ -287,28 +289,32 @@ namespace smime {
             return empty;
         }
 
+        num = sk_X509_INFO_num(stackInfo.get());
+        if(num < 0) {
+            return empty;
+        }
+
         STACK_OF_X509_ptr stack(sk_X509_new_null(), stackOfX509Deleter);
         if (!stack) {
             handleSSLError();
             return empty;
         }
 
-        num = sk_X509_INFO_num(stackInfo.get());
-        if(num < 0) {
-            return empty;
-        }
-
+        bool first_cert_in_file = true;
         while (sk_X509_INFO_num(stackInfo.get())) {
             X509_INFO_ptr xi(sk_X509_INFO_shift(stackInfo.get()),
                              ::X509_INFO_free);
+            if (first_cert_in_file) {
+                first_cert_in_file = false;
+                continue;  // Never load the main certificate onto the stack!
+            }
             if (xi->x509 != nullptr)
                 sk_X509_push(stack.get(), xi->x509);
         }
 
         numCerts = sk_X509_num(stack.get());
         if(numCerts == 0) {
-            sk_X509_free(stack.get());
-            return empty;
+            stack = std::move(empty);
         }
 
         return stack;
