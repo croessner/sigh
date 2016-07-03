@@ -105,21 +105,21 @@ namespace smime {
         ERR_load_crypto_strings();
 
         // S/MIME certificate
-        BIO_ptr tbio1(BIO_new_file(cert.string().c_str(), "r"), ::BIO_free);
+        BIO_ptr tbio1(BIO_new_file(cert.string().c_str(), "r"), bioDeleter);
         if (!tbio1) {
             handleSSLError();
             return;
         }
 
         X509_ptr scert(PEM_read_bio_X509(tbio1.get(), nullptr, 0, nullptr),
-                       ::X509_free);
+                       x509Deleter);
         if (!scert) {
             handleSSLError();
             return;
         }
 
         // S/MIME key
-        BIO_ptr tbio2(BIO_new_file(key.string().c_str(), "r"), ::BIO_free);
+        BIO_ptr tbio2(BIO_new_file(key.string().c_str(), "r"), bioDeleter);
         if (!tbio2) {
             handleSSLError();
             return;
@@ -127,18 +127,22 @@ namespace smime {
 
         EVP_PKEY_ptr skey(
                 PEM_read_bio_PrivateKey(tbio2.get(), nullptr, 0, nullptr),
-                ::EVP_PKEY_free);
+                evpPkeyDeleter);
         if (!skey) {
             handleSSLError();
             return;
         }
 
         // Try to load intermediate certificates
+        if (::debug)
+            std::cout << "-> loadIntermediate()" << std::endl;
         STACK_OF_X509_ptr chain(loadIntermediate(cert.string()));
+        if (::debug)
+            std::cout << "<- loadIntermediate()" << std::endl;
 
         // Loading mail content from temp file
         BIO_ptr in(BIO_new_file(client->getTempFile().c_str(), "r"),
-                   ::BIO_free);
+                   bioDeleter);
         if (!in) {
             handleSSLError();
             return;
@@ -147,13 +151,13 @@ namespace smime {
         // Signing
         PKCS7_ptr p7(PKCS7_sign(scert.get(), skey.get(), chain.get(), in.get(),
                                 flags),
-                     ::PKCS7_free);
+                     pkcs7Deleter);
         if (!p7) {
             handleSSLError();
             return;
         }
 
-        BIO_ptr out(BIO_new(BIO_s_mem()), ::BIO_free);
+        BIO_ptr out(BIO_new(BIO_s_mem()), bioDeleter);
         if (!out) {
             handleSSLError();
             return;
@@ -276,9 +280,11 @@ namespace smime {
             /* empty */
         });
 
-        BIO_ptr bio(BIO_new_file(file.c_str(), "r"), ::BIO_free);
+        BIO_ptr bio(BIO_new_file(file.c_str(), "r"), bioDeleter);
         if (!bio) {
             handleSSLError();
+            if (::debug)
+                std::cout << "\t!bio" << std::endl;
             return empty;
         }
 
@@ -286,24 +292,30 @@ namespace smime {
                 bio.get(), nullptr, nullptr, nullptr), stackOfX509InfoDeleter);
         if (!stackInfo) {
             handleSSLError();
+            if (::debug)
+                std::cout << "\t!stackInfo" << std::endl;
             return empty;
         }
 
         num = sk_X509_INFO_num(stackInfo.get());
         if(num < 0) {
+            if (::debug)
+                std::cout << "\tnum<0" << std::endl;
             return empty;
         }
 
         STACK_OF_X509_ptr stack(sk_X509_new_null(), stackOfX509Deleter);
         if (!stack) {
             handleSSLError();
+            if (::debug)
+                std::cout << "\t!stack" << std::endl;
             return empty;
         }
 
         bool first_cert_in_file = true;
         while (sk_X509_INFO_num(stackInfo.get())) {
             X509_INFO_ptr xi(sk_X509_INFO_shift(stackInfo.get()),
-                             ::X509_INFO_free);
+                             x509InfoDeleter);
             if (first_cert_in_file) {
                 first_cert_in_file = false;
                 continue;  // Never load the main certificate onto the stack!
@@ -314,21 +326,69 @@ namespace smime {
 
         numCerts = sk_X509_num(stack.get());
         if(numCerts == 0) {
+            if (::debug)
+                std::cout << "\tstack empty" << std::endl;
             stack = std::move(empty);
         }
 
         return stack;
     }
 
-    // Free functions
+    // Functor definitions
+
+    void bioDeleter(BIO *ptr) {
+        if (ptr != nullptr) {
+            BIO_free(ptr);
+            if (::debug)
+                std::cout << "\tBIO_free() called" << std::endl;
+        }
+    }
+
+    void x509Deleter(X509 *ptr) {
+        if (ptr != nullptr) {
+            X509_free(ptr);
+            if (::debug)
+                std::cout << "\tX509_free() called" << std::endl;
+        }
+    }
+
+    void x509InfoDeleter(X509_INFO *ptr) {
+        if (ptr != nullptr) {
+            X509_INFO_free(ptr);
+            if (::debug)
+                std::cout << "\tX509_INFO_free() called" << std::endl;
+        }
+    }
+
+    void evpPkeyDeleter(EVP_PKEY *ptr) {
+        if (ptr != nullptr) {
+            EVP_PKEY_free(ptr);
+            if (::debug)
+                std::cout << "\tEVP_PKEY_free() called" << std::endl;
+        }
+    }
+
+    void pkcs7Deleter(PKCS7 *ptr) {
+        if (ptr != nullptr) {
+            PKCS7_free(ptr);
+            if (::debug)
+                std::cout << "\tPKCS7_free() called" << std::endl;
+        }
+    }
 
     void stackOfX509Deleter(STACK_OF(X509) *ptr) {
-        if (ptr != nullptr)
+        if (ptr != nullptr) {
             sk_X509_free(ptr);
+            if (::debug)
+                std::cout << "\tsk_X509_free() called" << std::endl;
+        }
     }
 
     void stackOfX509InfoDeleter(STACK_OF(X509_INFO) *ptr) {
-        if (ptr != nullptr)
+        if (ptr != nullptr) {
             sk_X509_INFO_free(ptr);
+            if (::debug)
+                std::cout << "\tsk_X509_INFO_free() called" << std::endl;
+        }
     }
 }  // namespace smime

@@ -357,7 +357,11 @@ sfsistat mlfi_eom(SMFICTX *ctx) {
 
     smime::Smime smimeMsg(ctx);
 
+    if (::debug)
+        std::cout << "-> sign()" << std::endl;
     smimeMsg.sign();
+    if (::debug)
+        std::cout << "<- sign()" << std::endl;
     if (!smimeMsg.isSmimeSigned()) {
         if (::debug)
             std::cout << "Email was not signed" << std::endl;

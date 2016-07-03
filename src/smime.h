@@ -29,23 +29,22 @@ namespace smime {
 
     using split_t =  std::vector<std::string>;
 
-    /*!
-     * \brief A deleter function used as a functor
-     */
+    // Functor declarations
+    void bioDeleter(BIO *);
+    void x509Deleter(X509 *);
+    void x509InfoDeleter(X509_INFO *);
+    void evpPkeyDeleter(EVP_PKEY *);
+    void pkcs7Deleter(PKCS7 *);
     void stackOfX509Deleter(STACK_OF(X509) *ptr);
-
-    /*!
-     * \brief A deleter function used as a functor
-     */
     void stackOfX509InfoDeleter(STACK_OF(X509_INFO) *ptr);
 
-    using BIO_ptr = std::unique_ptr<BIO, decltype(&::BIO_free)>;
-    using X509_ptr = std::unique_ptr<X509, decltype(&::X509_free)>;
+    // Type definitions for OpenSSL
+    using BIO_ptr = std::unique_ptr<BIO, decltype(&bioDeleter)>;
+    using X509_ptr = std::unique_ptr<X509, decltype(&x509Deleter)>;
     using X509_INFO_ptr = std::unique_ptr<X509_INFO,
-            decltype(&::X509_INFO_free)>;
-    using EVP_PKEY_ptr = std::unique_ptr<EVP_PKEY,
-            decltype(&::EVP_PKEY_free)>;
-    using PKCS7_ptr = std::unique_ptr<PKCS7, decltype(&::PKCS7_free)>;
+            decltype(&x509InfoDeleter)>;
+    using EVP_PKEY_ptr = std::unique_ptr<EVP_PKEY, decltype(&evpPkeyDeleter)>;
+    using PKCS7_ptr = std::unique_ptr<PKCS7, decltype(&pkcs7Deleter)>;
     using STACK_OF_X509_ptr = std::unique_ptr<STACK_OF(X509),
             decltype(&stackOfX509Deleter)>;
     using STACK_OF_X509_INFO_ptr = std::unique_ptr<STACK_OF(X509_INFO),
