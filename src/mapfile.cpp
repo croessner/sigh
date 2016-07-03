@@ -68,6 +68,12 @@ namespace mapfile {
         }
     }
 
+    void Map::resetCertStore(void) {
+        confLock.lock();
+        certStore.clear();
+        confLock.unlock();
+    }
+
     // Private
 
     certstore_t Map::certStore = {};

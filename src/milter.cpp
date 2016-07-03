@@ -46,7 +46,7 @@ bool debug = false;
 static std::string miltername("sigh");
 
 //! \brief Version number
-static const std::string version("1606.1.0");
+static const std::string version("1607.1.0");
 
 //! \brief  Configuration options for the milter
 static std::unique_ptr<conf::MilterCfg> config(nullptr);
@@ -489,9 +489,10 @@ static void signalHandler(int sig) {
             exit(EX_SOFTWARE);
         case SIGHUP:
             std::cout << "Caught signal " << sig
-                      << ". Reloading mapfile" << std::endl;
+                      << ". Reloading map file" << std::endl;
+            mapfile::Map::resetCertStore();
             mapfile::Map::readMap(::config->getValue("mapfile"));
-            syslog(LOG_NOTICE, "%s", "Mapfile reloaded");
+            syslog(LOG_NOTICE, "%s", "Map file reloaded");
             break;
         default:
         { /* empty */ }

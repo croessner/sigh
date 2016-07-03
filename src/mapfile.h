@@ -58,6 +58,11 @@ namespace mapfile {
         static void readMap(const std::string&);
 
         /*!
+         * \brief Reset the certificate table
+         */
+        static void resetCertStore(void);
+
+        /*!
          * \brief A certificate or key
          */
         template <Smime>

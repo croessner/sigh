@@ -52,4 +52,6 @@ target_link_libraries (
         ${Boost_LIBRARIES}
 )
 
+install(FILES etc/sigh-example.cfg etc/mapfile-example.txt
+        DESTINATION etc/sigh COMPONENT config)
 install(PROGRAMS sigh ${CMAKE_CURRENT_BINARY_DIR}/sigh DESTINATION sbin)
