@@ -1,4 +1,6 @@
 doc
-etc
+etc/smimecerts
+etc/sigh.cfg
+etc/mapfile.txt
 run
 .idea
