@@ -1,16 +1,16 @@
-/*! \file client.cpp
+/*! @file client.cpp
  *
- * \brief Implements a class that stores client SMTP session information.
+ * @brief Implements a class that stores client SMTP session information.
  *
  * The main purpose of this class is to store all kind of SMTP session
  * information that come in while a client runs through all the callbacks.
  * The data itself is organized in a list. An instance of this class is
  * carried with the smfi_getpriv() routine.
  *
- * \author Christian Roessner <c@roessner.co>
- * \version 1606.1.0
- * \date 2016-06-10
-  * \copyright Copyright 2016 Christian Roessner <c@roessner.co>
+ * @author Christian Roessner <c@roessner.co>
+ * @version 1606.1.0
+ * @date 2016-06-10
+ * @copyright Copyright 2016 Christian Roessner <c@roessner.co>
 */
 
 #include "client.h"
@@ -20,7 +20,7 @@
 #include <string>
 
 namespace mlt {
-    //! \brief This lock is for the unique identifier
+    //! @brief This lock is for the unique identifier
     static std::mutex uniqueIdLock;
 
     // Public

@@ -1,11 +1,11 @@
-/*! \file client.h
+/*! @file client.h
  *
- * \brief Declare the class Client that is used to store SMTP session data
+ * @brief Declare the class Client that is used to store SMTP session data
  *
- * \author Christian Roessner <c@roessner.co>
- * \version 1606.1.0
- * \date 2016-06-10
-  * \copyright Copyright 2016 Christian Roessner <c@roessner.co>
+ * @author Christian Roessner <c@roessner.co>
+ * @version 1606.1.0
+ * @date 2016-06-10
+ * @copyright Copyright 2016 Christian Roessner <c@roessner.co>
  */
 
 #ifndef SRC_CLIENT_H_
@@ -34,7 +34,7 @@ namespace mlt {
     using markedHeaders_t = std::vector<std::pair<std::string, std::string>>;
 
     /*!
-     * \brief Internal detecting flags
+     * @brief Internal detecting flags
      *
      * We check for certain headers. ANDing and ORing makes processing faster
      */
@@ -45,24 +45,24 @@ namespace mlt {
     };
 
     /*!
-     * \brief This class stores SMTP session data
+     * @brief This class stores SMTP session data
      */
     class Client {
     public:
         /*!
-         * \brief Constructor
+         * @brief Constructor
          */
         Client(const std::string &, struct sockaddr *);
 
         /*!
-         * \brief Destructor
+         * @brief Destructor
          *
          * On client disconnect, a temporary file will be removed
          */
         virtual ~Client(void);
 
         /*!
-         * \brief Create a new temporary file for each email
+         * @brief Create a new temporary file for each email
          *
          * Whenever a connected client sends a message, a new temporary file
          * gets created. If the file cannot be created, the internal pointer
@@ -71,19 +71,19 @@ namespace mlt {
         bool createContentFile(const std::string &);
 
         /*!
-         * \brief The path to a temp file for a connected client
+         * @brief The path to a temp file for a connected client
          */
         inline const std::string & getTempFile() const {
             return temp.string();
         }
 
         /*!
-         * \brief Status of the temp file
+         * @brief Status of the temp file
          */
         inline bool getFcontentStatus(void) { return fcontentStatus; }
 
         /*!
-         * \brief Clear existing data structures for a client
+         * @brief Clear existing data structures for a client
          *
          * We mus always clear data structures at the end of each message,
          * as a connected client might send more than one message in a SMTP
@@ -91,66 +91,66 @@ namespace mlt {
          */
         void reset(void);
 
-        //! \brief SMTP session data map
+        //! @brief SMTP session data map
         sessionData_t sessionData;
 
         /*!
-         * \brief List of headers to be removed from original message
+         * @brief List of headers to be removed from original message
          *
          * First element is a mail header key, second its header value
          */
         markedHeaders_t markedHeaders;
 
-        //! \brief Email content gets stored in a temp file
+        //! @brief Email content gets stored in a temp file
         FILE *fcontent;
 
-        //! \brief Hostname of a connected client
+        //! @brief Hostname of a connected client
         const std::string hostname;
 
-        //! \brief IPv4/IPv6:port of a connected client
+        //! @brief IPv4/IPv6:port of a connected client
         const std::string ipAndPort;
 
-        //! \brief Identifier that a client got after a connect
+        //! @brief Identifier that a client got after a connect
         const counter_t id;
 
-        //! \brief Current detected header flags ORed together
+        //! @brief Current detected header flags ORed together
         u_int8_t mailflags;
 
-        //! \brief Flag that signals an existing MIME preamble
+        //! @brief Flag that signals an existing MIME preamble
         bool optionalPreamble;
 
-        //! \brief If an error occurs while signing the mail, this flag is set
+        //! @brief If an error occurs while signing the mail, this flag is set
         bool genericError;
 
     private:
         /*!
-         * \brief Convert struct sockaddr to a string representation
+         * @brief Convert struct sockaddr to a string representation
          *
          * Take a struct hostaddr and convert it to a string address:port for
          * IPv4 addresses and [address]:port for IPv6. If the string can not be
          * constructed, set its value to "unknown".
          *
-         * \return String representation of a struct sockaddr
+         * @return String representation of a struct sockaddr
          */
         static const std::string prepareIPandPort(struct sockaddr *);
 
         /*!
-         * \brief Close remaining content file and remove it safely
+         * @brief Close remaining content file and remove it safely
          */
         void cleanup(void);
 
         /*!
-         * \brief Unique identifier
+         * @brief Unique identifier
          *
          * A global unique identifier that gets incremented for each new
          * client connection.
          */
         static counter_t uniqueId;
 
-        //! \brief Name of a temporary file for email content
+        //! @brief Name of a temporary file for email content
         fs::path temp;
 
-        //! \brief The status of the tem file. Closed (false), open (true)
+        //! @brief The status of the tem file. Closed (false), open (true)
         bool fcontentStatus;
     };
 }  // namespace mlt

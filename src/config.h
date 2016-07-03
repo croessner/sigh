@@ -1,11 +1,11 @@
-/*! \file config.h
+/*! @file config.h
  *
- * \brief Handle a milter configuration file
+ * @brief Handle a milter configuration file
  *
- * \author Christian Roessner <c@roessner.co>
- * \version 1606.1.0
- * \date 2016-06-10
-  * \copyright Copyright 2016 Christian Roessner <c@roessner.co>
+ * @author Christian Roessner <c@roessner.co>
+ * @version 1606.1.0
+ * @date 2016-06-10
+ * @copyright Copyright 2016 Christian Roessner <c@roessner.co>
  */
 
 #ifndef SRC_CONFIG_H_
@@ -27,7 +27,7 @@ namespace conf {
     using config_t = std::map<std::string, boost::any>;
 
     /*!
-     * \brief Read a configuration file and store settings
+     * @brief Read a configuration file and store settings
      *
      * All milter settings may be stored in a configuration file. This class
      * reads a default configuration file, if not given as command line
@@ -38,49 +38,49 @@ namespace conf {
     class MilterCfg {
     public:
         /*!
-         * \brief Constructor
+         * @brief Constructor
          */
         MilterCfg(const po::variables_map &);
 
         /*!
-         * \brief Destructor
+         * @brief Destructor
          */
         virtual ~MilterCfg(void) = default;
 
         /*!
-         * \brief A configuration value
+         * @brief A configuration value
          */
         template <typename T=std::string, typename R=T>
         R getValue(const std::string &);
 
     private:
         /*!
-         * \brief Data store for configuration settings
+         * @brief Data store for configuration settings
          */
         config_t param;
 
         /*!
-         * \brief Default settings for the milter
+         * @brief Default settings for the milter
          *
          * If a required setting could not be read from the configuration, a
          * default setting will be used from this data structure.
          */
         struct {
-            //! \brief Milter socket
+            //! @brief Milter socket
             std::string socket  = "inet:4000@127.0.0.1";
-            //! \brief Milter system user
+            //! @brief Milter system user
             std::string user    = "milter";
-            //! \brief Milter system group
+            //! @brief Milter system group
             std::string group   = "milter";
-            //! \brief Optional PID file
+            //! @brief Optional PID file
             std::string pidfile = std::string();
 #if !__APPLE__ && !defined _NOT_DAEMONIZE
-            //! \brief Run the milter as a daemon process
+            //! @brief Run the milter as a daemon process
             bool daemon         = false;
 #endif  // !__APPLE__ && !defined _NOT_DAEMONIZE
-            //! \brief Location for the map file
+            //! @brief Location for the map file
             std::string mapfile = std::string();
-            //! \brief Location for temporary files
+            //! @brief Location for temporary files
             std::string tmpdir = "/tmp";
         } defaults;
     };

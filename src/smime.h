@@ -1,11 +1,11 @@
-/*! \file smime.h
+/*! @file smime.h
  *
- * \brief Handle S/MIME messages
+ * @brief Handle S/MIME messages
  *
- * \author Christian Roessner <c@roessner.co>
- * \version 1606.1.0
- * \date 2016-06-10
-  * \copyright Copyright 2016 Christian Roessner <c@roessner.co>
+ * @author Christian Roessner <c@roessner.co>
+ * @version 1606.1.0
+ * @date 2016-06-10
+ * @copyright Copyright 2016 Christian Roessner <c@roessner.co>
  */
 
 #ifndef SRC_SMIME_H_
@@ -29,7 +29,7 @@ namespace smime {
 
     using split_t =  std::vector<std::string>;
 
-    // Functor declarations
+    // Wrapper functions
     void bioDeleter(BIO *);
     void x509Deleter(X509 *);
     void x509InfoDeleter(X509_INFO *);
@@ -51,7 +51,7 @@ namespace smime {
             decltype(&stackOfX509InfoDeleter)>;
 
     /*!
-     * \brief S/MIME handling
+     * @brief S/MIME handling
      *
      * This class creates a S/MIME signed mail if possible and directly talks
      * to the milter to add, modify headers and finally replace the body.
@@ -59,25 +59,25 @@ namespace smime {
     class Smime {
     public:
         /*!
-         * \brief Constructor
+         * @brief Constructor
          */
         Smime(SMFICTX *);
 
         /*!
-         * \brief Destructor
+         * @brief Destructor
          */
         ~Smime(void) = default;
 
         inline bool isSmimeSigned(void) const { return smimeSigned; }
 
         /*!
-         * \brief Sign a mail
+         * @brief Sign a mail
          */
         void sign(void);
 
     private:
         /*!
-         * \brief Add headers that were generated in sign()
+         * @brief Add headers that were generated in sign()
          *
          * When a message was signed, new headers need to be added to the
          * message.
@@ -85,7 +85,7 @@ namespace smime {
         int addHeader(const std::string &, const std::string &);
 
         /*!
-         * \brief Remove headers from original mail
+         * @brief Remove headers from original mail
          *
          * When signing, new headers are generated and existing ones are
          * embedded inside the new message body.
@@ -93,7 +93,7 @@ namespace smime {
         int removeHeader(const std::string &);
 
         /*!
-         * \brief Error handler for S/MIME signing problems
+         * @brief Error handler for S/MIME signing problems
          *
          * This method is always called, if some signing operations failed.
          * It also sets the genericError flag for the connected client.
@@ -101,7 +101,7 @@ namespace smime {
         void handleSSLError(void);
 
         /*!
-         * \brief Load intermediate S/MIME certificates
+         * @brief Load intermediate S/MIME certificates
          *
          * The S/MIME certificate may have several intermediate certficates
          * concatenated. Try to load them for signing.
@@ -112,14 +112,14 @@ namespace smime {
         STACK_OF_X509_ptr loadIntermediate(const std::string &);
 
         /*!
-         * \brief The current client context that was created on connect
+         * @brief The current client context that was created on connect
          *
          * This class works directly on the original message.
          */
         SMFICTX *ctx;
 
         /*!
-         * \brief Flag that indicates, if signing was possible
+         * @brief Flag that indicates, if signing was possible
          *
          * If a certificate and key was provided and signing was successful,
          * this flag is used in mlfi_eom to evaluate a reply message.
@@ -127,7 +127,7 @@ namespace smime {
         bool smimeSigned;
 
         /*!
-         * \brief A normalized version of the MAIL FROM address
+         * @brief A normalized version of the MAIL FROM address
          *
          * We strip away '<' and '>' to easily lookup required information in
          * our cert store, which is provided by the map class.

@@ -1,11 +1,11 @@
-/*! \file milter.h
+/*! @file milter.h
  *
- * \brief Some helper macros and function declarations for the main application
+ * @brief Some helper macros and function declarations for the main application
  *
- * \author Christian Roessner <c@roessner.co>
- * \version 1606.1.0
- * \date 2016-06-10
-  * \copyright Copyright 2016 Christian Roessner <c@roessner.co>
+ * @author Christian Roessner <c@roessner.co>
+ * @version 1606.1.0
+ * @date 2016-06-10
+ * @copyright Copyright 2016 Christian Roessner <c@roessner.co>
  */
 
 #ifndef SRC_MILTER_H_

@@ -1,11 +1,11 @@
-/*! \file mapfile.h
+/*! @file mapfile.h
  *
- * \brief Read a map file
+ * @brief Read a map file
  *
- * \author Christian Roessner <c@roessner.co>
- * \version 1606.1.0
- * \date 2016-06-10
-  * \copyright Copyright 2016 Christian Roessner <c@roessner.co>
+ * @author Christian Roessner <c@roessner.co>
+ * @version 1606.1.0
+ * @date 2016-06-10
+ * @copyright Copyright 2016 Christian Roessner <c@roessner.co>
  */
 
 #ifndef SRC_MAP_H_
@@ -27,12 +27,12 @@ namespace mapfile {
     using split_t =  std::vector<std::string>;
 
     /*!
-     * \brief Type selector. S/MIME certificate or key
+     * @brief Type selector. S/MIME certificate or key
      */
     enum class Smime {CERT, KEY};
 
     /*!
-     * \brief Load a map file
+     * @brief Load a map file
      *
      * Load a map file containing email addresses as keys and certificate
      * paths as value. It is loaded on startup and can be reloaded by
@@ -41,36 +41,36 @@ namespace mapfile {
     class Map {
     public:
         /*!
-         * \brief Constructor
+         * @brief Constructor
          *
          * Find S/MIME cert and key based on an email address
          */
         Map(const std::string &);
 
         /*!
-         * \brief Destructor
+         * @brief Destructor
          */
         virtual ~Map(void) = default;
 
         /*!
-         * \brief Read a map file and store data internally in certStore
+         * @brief Read a map file and store data internally in certStore
          */
         static void readMap(const std::string&);
 
         /*!
-         * \brief Reset the certificate table
+         * @brief Reset the certificate table
          */
         static void resetCertStore(void);
 
         /*!
-         * \brief A certificate or key
+         * @brief A certificate or key
          */
         template <Smime>
         const std::string & getSmimeFilename(void);
 
     private:
         /*!
-         * \brief Setter which checks for a cert and key
+         * @brief Setter which checks for a cert and key
          *
          * Prepare internal attributes smimeCert and smimeKey
          */
@@ -78,7 +78,7 @@ namespace mapfile {
         void setSmimeFile(const split_t &);
 
         /*!
-         * \brief System wide certificate store
+         * @brief System wide certificate store
          *
          * When data gets read by readMap(), all recognized table records are
          * stored into this map. No further splitting or testing is done here.
@@ -86,22 +86,22 @@ namespace mapfile {
         static certstore_t certStore;
 
         /*!
-         * \brief Flag to signal, if a map file could be loaded
+         * @brief Flag to signal, if a map file could be loaded
          */
         static bool loaded;
 
         /*!
-         * \brief The MAIL FROM address as used as a key for the certStore
+         * @brief The MAIL FROM address as used as a key for the certStore
          */
         const std::string mailFrom;
 
         /*!
-         * \brief S/MIME certificate of a user
+         * @brief S/MIME certificate of a user
          */
         std::string smimeCert;
 
         /*!
-         * \brief S/MIME key of a user
+         * @brief S/MIME key of a user
          */
         std::string smimeKey;
     };

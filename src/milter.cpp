@@ -1,6 +1,6 @@
-/*! \file milter.cpp
+/*! @file milter.cpp
  *
- * \brief Main file that implements an example milter
+ * @brief Main file that implements an example milter
  *
  * This file implments all callbacks that are possible for a milter
  * application. They are requistered at the end in one structure called
@@ -9,10 +9,10 @@
  * For the milter API documentation, look here:
  * https://www.mirbsd.org/htman/i386/manDOCS/milter/api.html
  *
- * \author Christian Roessner <c@roessner.co>
- * \version 1606.1.0
- * \date 2016-06-10
- * \copyright Copyright 2016 Christian Roessner <c@roessner.co>
+ * @author Christian Roessner <c@roessner.co>
+ * @version 1606.1.0
+ * @date 2016-06-10
+ * @copyright Copyright 2016 Christian Roessner <c@roessner.co>
  */
 
 #include "milter.h"
@@ -39,23 +39,23 @@
 namespace fs = boost::filesystem;
 namespace po = boost::program_options;
 
-//! \brief Turn on/off debugging output
+//! @brief Turn on/off debugging output
 bool debug = false;
 
-//! \brief The internal milter name
+//! @brief The internal milter name
 static std::string miltername("sigh");
 
-//! \brief Version number
+//! @brief Version number
 static const std::string version("1607.1.0");
 
-//! \brief  Configuration options for the milter
+//! @brief  Configuration options for the milter
 static std::unique_ptr<conf::MilterCfg> config(nullptr);
 
-//! \brief Required headers for the smfi_header()-callback
+//! @brief Required headers for the smfi_header()-callback
 static std::vector<std::string> header;
 
 /*!
- * \brief Global data structure that maps all callbacks
+ * @brief Global data structure that maps all callbacks
  */
 static struct smfiDesc smfilter = {
         util::ccp(miltername.c_str()),  // filter name
@@ -117,7 +117,7 @@ static struct smfiDesc smfilter = {
 };
 
 /*!
- * \brief xxfi_connect() callback
+ * @brief xxfi_connect() callback
  */
 sfsistat mlfi_connect(SMFICTX *ctx, char *hostname, struct sockaddr *hostaddr) {
     assert(ctx != nullptr);
@@ -152,7 +152,7 @@ sfsistat mlfi_connect(SMFICTX *ctx, char *hostname, struct sockaddr *hostaddr) {
 
 #if defined _CB_HELO
 /*!
- * \brief xxfi_helo() callback
+ * @brief xxfi_helo() callback
  */
 sfsistat mlfi_helo(SMFICTX *ctx, char *helohost) {
     return SMFIS_CONTINUE;
@@ -161,7 +161,7 @@ sfsistat mlfi_helo(SMFICTX *ctx, char *helohost) {
 
 #if defined _CB_ENVFROM
 /*!
- * \brief xxfi_envfrom() callback
+ * @brief xxfi_envfrom() callback
  */
 sfsistat mlfi_envfrom(SMFICTX *ctx, char **smtp_argv) {
     assert(ctx != nullptr);
@@ -185,7 +185,7 @@ sfsistat mlfi_envfrom(SMFICTX *ctx, char **smtp_argv) {
 
 #if defined _CB_ENVRCPT
 /*!
- * \brief xxfi_envrcpt() callback
+ * @brief xxfi_envrcpt() callback
  */
 sfsistat mlfi_envrcpt(SMFICTX *ctx, char **smtp_argv) {
     return SMFIS_CONTINUE;
@@ -194,7 +194,7 @@ sfsistat mlfi_envrcpt(SMFICTX *ctx, char **smtp_argv) {
 
 # if defined _CB_DATA
 /*!
- * \brief xxfi_data() callback
+ * @brief xxfi_data() callback
  */
 sfsistat mlfi_data(SMFICTX *ctx) {
     return SMFIS_CONTINUE;
@@ -203,7 +203,7 @@ sfsistat mlfi_data(SMFICTX *ctx) {
 
 # if defined _CB_UNKNOWN
 /*!
- * \brief xxfi_unknown() callback
+ * @brief xxfi_unknown() callback
  */
 sfsistat mlfi_unknown(SMFICTX *ctx, const char *cmd) {
     return SMFIS_CONTINUE;
@@ -212,7 +212,7 @@ sfsistat mlfi_unknown(SMFICTX *ctx, const char *cmd) {
 
 #if defined _CB_HEADER
 /*!
- * \brief xxfi_header() callback
+ * @brief xxfi_header() callback
  */
 sfsistat mlfi_header(
         SMFICTX *ctx, char *header_key, char *header_value) {
@@ -243,7 +243,7 @@ sfsistat mlfi_header(
             }
 
             if (fprintf(client->fcontent,
-                        "%s: %s\r\n",
+                        "%s: %s@r@n",
                         header_key,
                         header_value) < 0) {
                 std::cerr << "Error: Unable to write header" << std::endl;
@@ -260,7 +260,7 @@ sfsistat mlfi_header(
 
 #if defined _CB_EOH
 /*!
- * \brief xxfi_eoh() callback
+ * @brief xxfi_eoh() callback
  */
 sfsistat mlfi_eoh(SMFICTX *ctx) {
     assert(ctx != nullptr);
@@ -279,7 +279,7 @@ sfsistat mlfi_eoh(SMFICTX *ctx) {
         return SMFIS_REJECT;
     }
 
-    if (fprintf(client->fcontent, "\r\n") <= 0) {
+    if (fprintf(client->fcontent, "@r@n") <= 0) {
         std::cerr << "Error: Unable to write end of header" << std::endl;
         return SMFIS_TEMPFAIL;
     }
@@ -290,7 +290,7 @@ sfsistat mlfi_eoh(SMFICTX *ctx) {
 
 #if defined _CB_BODY
 /*!
- * \brief xxfi_body() callback
+ * @brief xxfi_body() callback
  */
 sfsistat mlfi_body(SMFICTX *ctx, unsigned char *bodyp, size_t body_len) {
     assert(ctx != nullptr);
@@ -332,7 +332,7 @@ sfsistat mlfi_body(SMFICTX *ctx, unsigned char *bodyp, size_t body_len) {
 
 #if defined _CB_EOM
 /*!
- * \brief xxfi_eom() callback
+ * @brief xxfi_eom() callback
  */
 sfsistat mlfi_eom(SMFICTX *ctx) {
     assert(ctx != nullptr);
@@ -468,7 +468,7 @@ static void initMilter(const std::string &con) {
 }
 
 /*!
- * \brief Signal handling
+ * @brief Signal handling
  */
 static void signalHandler(int sig) {
     switch (sig) {

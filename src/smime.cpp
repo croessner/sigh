@@ -1,11 +1,11 @@
-/*! \file smime.cpp
+/*! @file smime.cpp
  *
- * \brief Handle S/MIME messages
+ * @brief Handle S/MIME messages
  *
- * \author Christian Roessner <c@roessner.co>
- * \version 1606.1.0
- * \date 2016-06-10
-  * \copyright Copyright 2016 Christian Roessner <c@roessner.co>
+ * @author Christian Roessner <c@roessner.co>
+ * @version 1606.1.0
+ * @date 2016-06-10
+ * @copyright Copyright 2016 Christian Roessner <c@roessner.co>
  */
 
 #include "smime.h"
@@ -196,7 +196,7 @@ namespace smime {
              * Normally we would expect CRLF, but the BIO currently only
              * contains a LF at the end of header lines.
              */
-            if ((strcmp(line, "\n") == 0) || (strcmp(line, "\r\n")) == 0)
+            if ((strcmp(line, "@n") == 0) || (strcmp(line, "@r@n")) == 0)
                 break;
 
             // Add PKCS#7 header to message
@@ -284,7 +284,7 @@ namespace smime {
         if (!bio) {
             handleSSLError();
             if (::debug)
-                std::cout << "\t!bio" << std::endl;
+                std::cout << "@t!bio" << std::endl;
             return empty;
         }
 
@@ -293,14 +293,14 @@ namespace smime {
         if (!stackInfo) {
             handleSSLError();
             if (::debug)
-                std::cout << "\t!stackInfo" << std::endl;
+                std::cout << "@t!stackInfo" << std::endl;
             return empty;
         }
 
         num = sk_X509_INFO_num(stackInfo.get());
         if(num < 0) {
             if (::debug)
-                std::cout << "\tnum<0" << std::endl;
+                std::cout << "@tnum<0" << std::endl;
             return empty;
         }
 
@@ -308,7 +308,7 @@ namespace smime {
         if (!stack) {
             handleSSLError();
             if (::debug)
-                std::cout << "\t!stack" << std::endl;
+                std::cout << "@t!stack" << std::endl;
             return empty;
         }
 
@@ -327,20 +327,20 @@ namespace smime {
         numCerts = sk_X509_num(stack.get());
         if(numCerts == 0) {
             if (::debug)
-                std::cout << "\tstack empty" << std::endl;
+                std::cout << "@tstack empty" << std::endl;
             stack = std::move(empty);
         }
 
         return stack;
     }
 
-    // Functor definitions
+    // Wrapper functions
 
     void bioDeleter(BIO *ptr) {
         if (ptr != nullptr) {
             BIO_free(ptr);
             if (::debug)
-                std::cout << "\tBIO_free() called" << std::endl;
+                std::cout << "@tBIO_free() called" << std::endl;
         }
     }
 
@@ -348,7 +348,7 @@ namespace smime {
         if (ptr != nullptr) {
             X509_free(ptr);
             if (::debug)
-                std::cout << "\tX509_free() called" << std::endl;
+                std::cout << "@tX509_free() called" << std::endl;
         }
     }
 
@@ -356,7 +356,7 @@ namespace smime {
         if (ptr != nullptr) {
             X509_INFO_free(ptr);
             if (::debug)
-                std::cout << "\tX509_INFO_free() called" << std::endl;
+                std::cout << "@tX509_INFO_free() called" << std::endl;
         }
     }
 
@@ -364,7 +364,7 @@ namespace smime {
         if (ptr != nullptr) {
             EVP_PKEY_free(ptr);
             if (::debug)
-                std::cout << "\tEVP_PKEY_free() called" << std::endl;
+                std::cout << "@tEVP_PKEY_free() called" << std::endl;
         }
     }
 
@@ -372,7 +372,7 @@ namespace smime {
         if (ptr != nullptr) {
             PKCS7_free(ptr);
             if (::debug)
-                std::cout << "\tPKCS7_free() called" << std::endl;
+                std::cout << "@tPKCS7_free() called" << std::endl;
         }
     }
 
@@ -380,7 +380,7 @@ namespace smime {
         if (ptr != nullptr) {
             sk_X509_free(ptr);
             if (::debug)
-                std::cout << "\tsk_X509_free() called" << std::endl;
+                std::cout << "@tsk_X509_free() called" << std::endl;
         }
     }
 
@@ -388,7 +388,7 @@ namespace smime {
         if (ptr != nullptr) {
             sk_X509_INFO_free(ptr);
             if (::debug)
-                std::cout << "\tsk_X509_INFO_free() called" << std::endl;
+                std::cout << "@tsk_X509_INFO_free() called" << std::endl;
         }
     }
 }  // namespace smime
