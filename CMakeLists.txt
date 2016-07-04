@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.3)
 project(mymilter)
 
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -pipe -std=c++14 -Wall -pedantic")
+set(MANPAGES asciidoc/sigh.8)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -pipe -std=c++14 -Wall -pedantic")
 set(SOURCE_FILES src/milter.cpp src/client.h src/client.cpp src/milter.h src/config.h src/config.cpp src/smime.h src/smime.cpp src/common.h src/mapfile.h src/mapfile.cpp)
 
 # Homebrew
@@ -52,6 +53,6 @@ target_link_libraries (
         ${Boost_LIBRARIES}
 )
 
-install(FILES etc/sigh-example.cfg etc/mapfile-example.txt
-        DESTINATION etc/sigh COMPONENT config)
+install(FILES etc/sigh-example.cfg etc/mapfile-example.txt DESTINATION etc/sigh COMPONENT config)
+install(FILES ${MANPAGES} DESTINATION man/man8)
 install(PROGRAMS sigh ${CMAKE_CURRENT_BINARY_DIR}/sigh DESTINATION sbin)
