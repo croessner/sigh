@@ -243,7 +243,7 @@ sfsistat mlfi_header(
             }
 
             if (fprintf(client->fcontent,
-                        "%s: %s@r@n",
+                        "%s: %s\r\n",
                         header_key,
                         header_value) < 0) {
                 std::cerr << "Error: Unable to write header" << std::endl;
@@ -279,7 +279,7 @@ sfsistat mlfi_eoh(SMFICTX *ctx) {
         return SMFIS_REJECT;
     }
 
-    if (fprintf(client->fcontent, "@r@n") <= 0) {
+    if (fprintf(client->fcontent, "\r\n") <= 0) {
         std::cerr << "Error: Unable to write end of header" << std::endl;
         return SMFIS_TEMPFAIL;
     }
