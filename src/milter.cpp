@@ -541,8 +541,9 @@ int main(int argc, const char *argv[]) {
              "Drop privileges to this user")
             ("group,g", po::value<std::string>(&mfgroup),
              "Drop privileges to this group")
-            ("config,c", po::value<std::string>(&mfcfgfile)->default_value
-                    ("/etc/sigh.cfg"), "Configuration file for this milter")
+            ("config,c", po::value<std::string>(&mfcfgfile)->default_value(
+                     "/etc/sigh/sigh.cfg"),
+             "Configuration file for this milter")
             ("debug", po::bool_switch()->default_value(false),
              "Turn on debugging output")
             ("pidfile,p", po::value<std::string>(&mfpidfile),
