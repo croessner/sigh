@@ -35,8 +35,8 @@ namespace smime {
     void x509InfoDeleter(X509_INFO *);
     void evpPkeyDeleter(EVP_PKEY *);
     void pkcs7Deleter(PKCS7 *);
-    void stackOfX509Deleter(STACK_OF(X509) *ptr);
-    void stackOfX509InfoDeleter(STACK_OF(X509_INFO) *ptr);
+    void stackOfX509Deleter(STACK_OF(X509) *);
+    void stackOfX509InfoDeleter(STACK_OF(X509_INFO) *);
 
     // Type definitions for OpenSSL
     using BIO_ptr = std::unique_ptr<BIO, decltype(&bioDeleter)>;

@@ -365,8 +365,6 @@ sfsistat mlfi_eom(SMFICTX *ctx) {
     if (!smimeMsg.isSmimeSigned()) {
         if (::debug)
             std::cout << "Email was not signed" << std::endl;
-
-        return SMFIS_CONTINUE;
     } else {
         std::string logmsg = "Signed mail for email address "
                              + client->sessionData["envfrom"];
