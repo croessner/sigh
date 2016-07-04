@@ -1,0 +1,121 @@
+sigh(8)
+=======
+:doctype: manpage
+
+
+NAME
+----
+sigh - Sign emails with S/MIME
+
+
+SYNOPSIS
+--------
+*sigh* ['OPTIONS']
+
+
+DESCRIPTION
+-----------
+Sigh is a milter that checks the MAIL FROM command and searches in a simple
+map file - a table - for a S/MIME certificate and key. If found, the email
+will be signed. The milter ensures that an email only gets signed once, if it
+was not signed or encrypted elsewhere.
+
+The files specified by the map file are required to be in PEM format. The
+keys must be unencrypted. A certificate may include intermediate certificates.
+For this, the file must have the main certificate and its intermediate
+certificates being concatenated in order, to have the resulting email signed
+correctly.
+
+The format of the map file as well as possible options in the configuration
+file for the milter are described in the example files sigh-example.cfg and
+mapfile-example.txt.
+
+
+OPTIONS
+-------
+
++--config+, +-c+ (/etc/sigh/sigh.cfg)::
+    Specify a configuration file for this milter.
+
++--daemon+, +-d+::
+    If the milter is compiled with daemon support, it forks itself into a
+    daemon process. This option is not available on Apple OS X (or newer).
+
++--debug+::
+    Enable debugging output to the console. Debugging is not written to the
+    syslog file. You must start the milter in foreground, to get any output.
+
++--group+, +-g+ (milter)::
+    When the milter gets started, it drops its group privileges to this group.
+
++--pidfile+, +-p+::
+    If the milter is started as a daemon, it can create a PID file for the
+    init system. After shutdown, the file will be removed again.
+
++--socket+, +-s+ (inet:4000@127.0.0.1)::
+    The milter will create a TCP or unix socket for its MTA. The format for
+    this parameter is as follows:
+
+    For IPv4:
+    inet:port@address
+
+    For IPv6:
+    inet6:port@[address]
+
+    For unix-socket:
+    unix:/path/to/socket
+
+    Example:
+
+    Listen on port 5678 on the IPv6 loopback address:
+    inet:5678@[::1]
+
++--user+, +-u+ (milter)::
+    When the milter gets started, it drops its user privileges to this user.
+
+
+EXAMPLES
+--------
+
+Start the milter in foreground with debugging turned on and create a unix
+socket:
+
+    sigh --debug --config /etc/sigh/sigh.cfg --socket unix:/var/run/sigh.sock
+
+Normal start:
+
+    sigh --daemon --config /etc/sigh/sigh.cfg --pidfile /run/sigh.pid
+
+
+EXIT STATUS
+-----------
+*0*::
+    Success
+
+*non 0*::
+    Result of the underlying libmilter library
+
+
+VERSION
+-------
+1607.1.0
+
+
+BUGS
+----
+For bugs please visit <http://signing-milter.org>.
+
+
+AUTHOR
+------
+Sigh was written by Christian Roessner <c@roessner.co>
+
+
+SEE ALSO
+--------
++/etc/sigh/sigh-example.cfg+, +/etc/sigh/mapfile-example.txt+
+
+
+RESOURCES
+---------
+project: <https://signing-milter.org>
