@@ -1,11 +1,21 @@
-To compile this project, do the following steps in the project root directory (not src):
+Requirements:
+
+- The C++ boost libraries (developed and tested with version 1.56.0)
+- libmilter from sendmail (developed and tested with version 1.0.2)
+- OpenSSL (developed and tested with 1.0.2h)
+
+Building:
+
+To compile this project, do the following steps in the project root directory:
 
 cmake .
 make
+make install
 
-To build documentation run:
+To build documentation run the following command in the root directory:
 
 doxygen Doxyfile
 
-The result is created under the doc directory currently including HTML, LaTex and Manpages.
+The result is created under the doc directory currently including HTML, LaTex
+and man pages.
 

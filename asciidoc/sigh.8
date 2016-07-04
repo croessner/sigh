@@ -1,0 +1,182 @@
+'\" t
+.\"     Title: sigh
+.\"    Author: [see the "AUTHOR" section]
+.\" Generator: DocBook XSL Stylesheets v1.79.1 <http://docbook.sf.net/>
+.\"      Date: 07/04/2016
+.\"    Manual: \ \&
+.\"    Source: \ \&
+.\"  Language: English
+.\"
+.TH "SIGH" "8" "07/04/2016" "\ \&" "\ \&"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+sigh \- Sign emails with S/MIME
+.SH "SYNOPSIS"
+.sp
+\fBsigh\fR [\fIOPTIONS\fR]
+.SH "DESCRIPTION"
+.sp
+Sigh is a milter that checks the MAIL FROM command and searches in a simple map file \- a table \- for a S/MIME certificate and key\&. If found, the email will be signed\&. The milter ensures that an email only gets signed once, if it was not signed or encrypted elsewhere\&.
+.sp
+The files specified by the map file are required to be in PEM format\&. The keys must be unencrypted\&. A certificate may include intermediate certificates\&. For this, the file must have the main certificate and its intermediate certificates being concatenated in order, to have the resulting email signed correctly\&.
+.sp
+The format of the map file as well as possible options in the configuration file for the milter are described in the example files sigh\-example\&.cfg and mapfile\-example\&.txt\&.
+.SH "OPTIONS"
+.PP
+\-\-config, \-c (/etc/sigh/sigh\&.cfg)
+.RS 4
+Specify a configuration file for this milter\&.
+.RE
+.PP
+\-\-daemon, \-d
+.RS 4
+If the milter is compiled with daemon support, it forks itself into a daemon process\&. This option is not available on Apple OS X (or newer)\&.
+.RE
+.PP
+\-\-debug
+.RS 4
+Enable debugging output to the console\&. Debugging is not written to the syslog file\&. You must start the milter in foreground, to get any output\&.
+.RE
+.PP
+\-\-group, \-g (milter)
+.RS 4
+When the milter gets started, it drops its group privileges to this group\&.
+.RE
+.PP
+\-\-pidfile, \-p
+.RS 4
+If the milter is started as a daemon, it can create a PID file for the init system\&. After shutdown, the file will be removed again\&.
+.RE
+.PP
+\-\-socket, \-s (inet:4000@127\&.0\&.0\&.1)
+.RS 4
+The milter will create a TCP or unix socket for its MTA\&. The format for this parameter is as follows:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+For IPv4:
+inet:port@address
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+For IPv6:
+inet6:port@[address]
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+For unix\-socket:
+unix:/path/to/socket
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+Example:
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+Listen on port 5678 on the IPv6 loopback address:
+inet:5678@[::1]
+.fi
+.if n \{\
+.RE
+.\}
+.RE
+.PP
+\-\-user, \-u (milter)
+.RS 4
+When the milter gets started, it drops its user privileges to this user\&.
+.RE
+.SH "EXAMPLES"
+.sp
+Start the milter in foreground with debugging turned on and create a unix socket:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+sigh \-\-debug \-\-config /etc/sigh/sigh\&.cfg \-\-socket unix:/var/run/sigh\&.sock
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+Normal start:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+sigh \-\-daemon \-\-config /etc/sigh/sigh\&.cfg \-\-pidfile /run/sigh\&.pid
+.fi
+.if n \{\
+.RE
+.\}
+.SH "EXIT STATUS"
+.PP
+\fB0\fR
+.RS 4
+Success
+.RE
+.PP
+\fBnon 0\fR
+.RS 4
+Result of the underlying libmilter library
+.RE
+.SH "VERSION"
+.sp
+1607\&.1\&.0
+.SH "BUGS"
+.sp
+For bugs please visit http://signing\-milter\&.org\&.
+.SH "AUTHOR"
+.sp
+Sigh was written by Christian Roessner <c@roessner\&.co>
+.SH "SEE ALSO"
+.sp
+/etc/sigh/sigh\-example\&.cfg, /etc/sigh/mapfile\-example\&.txt
+.SH "RESOURCES"
+.sp
+project: https://signing\-milter\&.org

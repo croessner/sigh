@@ -1,8 +1,11 @@
-Build the binary like described in README.BUILD.
+Build the binary like described in README.build.
+
+Copy sigh-example.cfg and mapfile-example.txt and rename them. Make changes to
+these files. The example files are well documented.
 
 Start the milter i.e.:
 
-./mymilter --debug
+./mymilter --debug --config /path/to/your/modified/config
 
 See full list of options with:
 

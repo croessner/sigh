@@ -54,5 +54,5 @@ target_link_libraries (
 )
 
 install(FILES etc/sigh-example.cfg etc/mapfile-example.txt DESTINATION etc/sigh COMPONENT config)
-install(FILES ${MANPAGES} DESTINATION man/man8)
+install(FILES ${MANPAGES} DESTINATION share/man/man8)
 install(PROGRAMS sigh ${CMAKE_CURRENT_BINARY_DIR}/sigh DESTINATION sbin)
