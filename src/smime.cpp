@@ -372,8 +372,10 @@ namespace smime {
                 first_cert_in_file = false;
                 continue;  // Never load the main certificate onto the stack!
             }
-            if (xi->x509 != nullptr)
+            if (xi->x509 != nullptr) {
                 sk_X509_push(stack.get(), xi->x509);
+                xi->x509 = nullptr;
+            }
         }
 
         /*
