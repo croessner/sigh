@@ -223,12 +223,14 @@ sfsistat mlfi_header(
     for (std::size_t i=0; i<::header.size(); i++) {
         if (strncasecmp(header_key, ::header.at(i).c_str(),
                         ::header.at(i).size()) == 0) {
+            // Found MIME-VERSION
+            if (strncasecmp(header_key, "MIME-Version", 12) == 0) {
+                client->mailflags |= mlt::mailflags::TYPE_MIME;
+                continue;
+            }
+
             client->markedHeaders.push_back(
                     std::make_pair(header_key, header_value));
-
-            // Found MIME-VERSION
-            if (strncasecmp(header_key, "MIME-Version", 12) == 0)
-                client->mailflags |= mlt::mailflags::TYPE_MIME;
 
             // Found multipart message
             if (strncasecmp(header_key, "Content-Type", 12) == 0)
