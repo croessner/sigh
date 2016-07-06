@@ -103,7 +103,7 @@ VERSION
 
 BUGS
 ----
-For bugs please visit <http://signing-milter.org>.
+For bugs please visit <https://signing-milter.org>.
 
 
 AUTHOR
