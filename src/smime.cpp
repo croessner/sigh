@@ -99,7 +99,7 @@ namespace smime {
          * Signing starts here
          */
 
-        int flags = PKCS7_DETACHED | PKCS7_STREAM;
+        int flags = PKCS7_DETACHED | PKCS7_STREAM | PKCS7_PARTIAL;
 
         OpenSSL_add_all_algorithms();
         ERR_load_crypto_strings();
