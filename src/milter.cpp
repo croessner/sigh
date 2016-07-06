@@ -367,6 +367,12 @@ sfsistat mlfi_eom(SMFICTX *ctx) {
     if (!smimeMsg.isSmimeSigned()) {
         if (::debug)
             std::cout << "Email was not signed" << std::endl;
+        // Look for an existing header of this milter
+        for (auto &it : client->markedHeaders)
+            if (it.first == mlt_header_name) {
+                smfi_chgheader(ctx, util::ccp(it.first.c_str()), 1, nullptr);
+                break;
+            }
     } else {
         std::string logmsg = "Signed mail for email address "
                              + client->sessionData["envfrom"];
