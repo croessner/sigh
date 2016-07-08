@@ -46,7 +46,7 @@ bool debug = false;
 static std::string miltername("sigh");
 
 //! @brief Version number
-static const std::string version("1607.1.0");
+static const std::string version("1607.1.1");
 
 //! @brief  Configuration options for the milter
 static std::unique_ptr<conf::MilterCfg> config(nullptr);
