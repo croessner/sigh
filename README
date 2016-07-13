@@ -5,9 +5,11 @@ these files. The example files are well documented.
 
 Start the milter i.e.:
 
-./mymilter --debug --config /path/to/your/modified/config
+./sigh --debug --config /path/to/your/modified/config
 
 See full list of options with:
 
-./mymilter -h
+./sigh -h
+
+The funny name of the milter is baed on an idea from Patrick Ben Koetter.
 
