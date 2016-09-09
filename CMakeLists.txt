@@ -2,15 +2,14 @@ cmake_minimum_required(VERSION 3.3)
 project(mymilter)
 
 set(MANPAGES asciidoc/sigh.8)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -pipe -std=c++14 -Wall -pedantic")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -pedantic")
 set(SOURCE_FILES src/milter.cpp src/client.h src/client.cpp src/milter.h src/config.h src/config.cpp src/smime.h src/smime.cpp src/common.h src/mapfile.h src/mapfile.cpp)
 
-# Homebrew
+# Homebrew - Note: Require openssl@1.1
 if (APPLE)
     set(local_INCLUDE_DIR /usr/local/include)
     set(local_LIBRARY_DIR /usr/local/lib)
-    set(openssl_INCLUDE_DIR /usr/local/opt/openssl/include)
-    set(openssl_LIBARARYDIR /usr/local/opt/openssl/lib)
+    set(OPENSSL_ROOT_DIR /usr/local/opt/openssl@1.1)
 endif (APPLE)
 
 find_package (Threads)
@@ -21,18 +20,18 @@ find_package(
         program_options
         REQUIRED
 )
+find_package(OpenSSL REQUIRED)
+
 find_library(milter_LIBRARIES milter)
-find_library(crypto_LIBRARIES crypto)
 
 include_directories(
         ${local_INCLUDE_DIR}
         ${Boost_INCLUDE_DIR}
-        ${openssl_INCLUDE_DIR}
+        ${OPENSSL_INCLUDE_DIR}
 )
 link_directories(
         ${local_LIBRARY_DIR}
         ${Boost_LIBRARY_DIR}
-        ${openssl_LIBRARY_DIR}
 )
 
 add_executable(sigh ${SOURCE_FILES})
@@ -49,7 +48,7 @@ target_link_libraries (
         sigh
         ${CMAKE_THREAD_LIBS_INIT}
         ${milter_LIBRARIES}
-        ${crypto_LIBRARIES}
+        ${OPENSSL_LIBRARIES}
         ${Boost_LIBRARIES}
 )
 
