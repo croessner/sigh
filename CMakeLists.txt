@@ -1,57 +1,71 @@
-cmake_minimum_required(VERSION 3.3)
-project(mymilter)
+CMAKE_MINIMUM_REQUIRED (VERSION 3.3)
+PROJECT (sigh)
 
-set(MANPAGES asciidoc/sigh.8)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -pedantic")
-set(SOURCE_FILES src/milter.cpp src/client.h src/client.cpp src/milter.h src/config.h src/config.cpp src/smime.h src/smime.cpp src/common.h src/mapfile.h src/mapfile.cpp)
-
-# Homebrew - Note: Require openssl@1.1
-if (APPLE)
-    set(local_INCLUDE_DIR /usr/local/include)
-    set(local_LIBRARY_DIR /usr/local/lib)
-    set(OPENSSL_ROOT_DIR /usr/local/opt/openssl@1.1)
-endif (APPLE)
-
-find_package (Threads)
-find_package(
-        Boost COMPONENTS
-        system
-        filesystem
-        program_options
-        REQUIRED
-)
-find_package(OpenSSL REQUIRED)
-
-find_library(milter_LIBRARIES milter)
-
-include_directories(
-        ${local_INCLUDE_DIR}
-        ${Boost_INCLUDE_DIR}
-        ${OPENSSL_INCLUDE_DIR}
-)
-link_directories(
-        ${local_LIBRARY_DIR}
-        ${Boost_LIBRARY_DIR}
+SET (MANPAGES asciidoc/sigh.8)
+SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -pedantic")
+SET (
+    SOURCE_FILES
+    src/common.h
+    src/milter.h
+    src/milter.cpp
+    src/client.h
+    src/client.cpp
+    src/config.h
+    src/config.cpp
+    src/smime.h
+    src/smime.cpp
+    src/mapfile.h
+    src/mapfile.cpp
 )
 
-add_executable(sigh ${SOURCE_FILES})
-
-target_compile_definitions(
-        sigh PRIVATE
-        _CB_ENVFROM
-        _CB_HEADER
-        _CB_EOH
-        _CB_BODY
-        _CB_EOM
+FIND_PACKAGE (Threads)
+FIND_PACKAGE (
+    Boost COMPONENTS
+    system
+    filesystem
+    program_options
+    REQUIRED
 )
-target_link_libraries (
-        sigh
-        ${CMAKE_THREAD_LIBS_INIT}
-        ${milter_LIBRARIES}
-        ${OPENSSL_LIBRARIES}
-        ${Boost_LIBRARIES}
+FIND_PACKAGE (OpenSSL REQUIRED)
+
+FIND_LIBRARY (milter_LIBRARIES milter)
+
+INCLUDE_DIRECTORIES (
+    ${Boost_INCLUDE_DIR}
+    ${OPENSSL_INCLUDE_DIR}
+)
+LINK_DIRECTORIES (
+    ${Boost_LIBRARY_DIR}
 )
 
-install(FILES etc/sigh-example.cfg etc/mapfile-example.txt DESTINATION /etc/sigh COMPONENT config)
-install(FILES ${MANPAGES} DESTINATION share/man/man8)
-install(PROGRAMS sigh ${CMAKE_CURRENT_BINARY_DIR}/sigh DESTINATION sbin)
+ADD_EXECUTABLE (sigh ${SOURCE_FILES})
+
+TARGET_COMPILE_DEFINITIONS (
+    sigh PRIVATE
+    _CB_ENVFROM
+    _CB_HEADER
+    _CB_EOH
+    _CB_BODY
+    _CB_EOM
+)
+TARGET_LINK_LIBRARIES (
+    sigh
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${milter_LIBRARIES}
+    ${OPENSSL_LIBRARIES}
+    ${Boost_LIBRARIES}
+)
+
+INSTALL (
+    FILES etc/sigh-example.cfg etc/mapfile-example.txt
+    DESTINATION /etc/sigh
+    COMPONENT config
+)
+INSTALL (
+    FILES ${MANPAGES}
+    DESTINATION share/man/man8
+)
+INSTALL (
+    PROGRAMS sigh ${CMAKE_CURRENT_BINARY_DIR}/sigh
+    DESTINATION sbin
+)
