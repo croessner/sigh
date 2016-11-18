@@ -8,7 +8,7 @@
  * carried with the smfi_getpriv() routine.
  *
  * @author Christian Roessner <c@roessner.co>
- * @version 1606.1.0
+ * @version 1607.1.3
  * @date 2016-06-10
  * @copyright Copyright 2016 Christian Roessner <c@roessner.co>
 */

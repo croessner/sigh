@@ -10,7 +10,7 @@
  * https://www.mirbsd.org/htman/i386/manDOCS/milter/api.html
  *
  * @author Christian Roessner <c@roessner.co>
- * @version 1606.1.0
+ * @version 1607.1.3
  * @date 2016-06-10
  * @copyright Copyright 2016 Christian Roessner <c@roessner.co>
  */
@@ -46,7 +46,7 @@ bool debug = false;
 static std::string miltername("sigh");
 
 //! @brief Version number
-static const std::string version("1607.1.2");
+static const std::string version("1607.1.3");
 
 //! @brief  Configuration options for the milter
 static std::unique_ptr<conf::MilterCfg> config(nullptr);
@@ -268,6 +268,7 @@ sfsistat mlfi_eoh(SMFICTX *ctx) {
     assert(ctx != nullptr);
 
     auto *client = util::mlfipriv(ctx);
+    bool ct_is_set = false;
 
     /*
      * Content-Type set without MIME-Version violates RFC2045
@@ -279,6 +280,20 @@ sfsistat mlfi_eoh(SMFICTX *ctx) {
         char code[] = "5.6.0";  // Invalid mail format
         smfi_setreply(ctx, status, code, reply);
         return SMFIS_REJECT;
+    }
+
+    // If we see a plain text email without Content-Type, add this header
+    for (auto &it : client->markedHeaders) {
+        if (it.first == "Content-Type") {
+            ct_is_set = true;
+            break;
+        }
+    }
+    if (!ct_is_set) {
+        if (fprintf(client->fcontent, "Content-Type: text/plain\r\n") == 0) {
+            std::cerr << "Error: Unable to write Content-Type" << std::endl;
+            return SMFIS_TEMPFAIL;
+        }
     }
 
     if (fprintf(client->fcontent, "\r\n") <= 0) {
