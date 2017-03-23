@@ -21,6 +21,9 @@
 #include <vector>
 #include <boost/algorithm/string.hpp>
 
+void init_openssl(void);
+void deinit_openssl(void);
+
 namespace smime {
     using boost::split;
     using boost::trim;

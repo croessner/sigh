@@ -678,6 +678,7 @@ int main(int argc, const char *argv[]) {
             std::cerr << "Error: Unable to create PID file" << std::endl;
         out.close();
     }
+    init_openssl();
 
     // Define headers
     ::header.push_back(mlt_header_name);
@@ -704,6 +705,8 @@ int main(int argc, const char *argv[]) {
 
     // Wait for signals
     milter.join();
+
+    deinit_openssl();
 
     if (!mfpidfile.empty()) {
         try {
