@@ -27,49 +27,47 @@
 /* we have this global to let the callback get easy access to it */
 static pthread_mutex_t *lockarray;
 
-static void lock_callback(int mode, int type, char *file, int line)
-{
-  (void)file;
-  (void)line;
-  if (mode & CRYPTO_LOCK) {
-    pthread_mutex_lock(&(lockarray[type]));
-  }
-  else {
-    pthread_mutex_unlock(&(lockarray[type]));
-  }
+static void lock_callback(int mode, int type, char *file, int line) {
+    (void) file;
+    (void) line;
+
+    if (mode & CRYPTO_LOCK) {
+        pthread_mutex_lock(&(lockarray[type]));
+    }
+    else {
+        pthread_mutex_unlock(&(lockarray[type]));
+    }
 }
 
-static unsigned long thread_id(void)
-{
-  unsigned long ret;
+static unsigned long thread_id(void) {
+    unsigned long ret;
 
-  ret=(unsigned long)pthread_self();
-  return(ret);
+    ret = (unsigned long) pthread_self();
+    return ret;
 }
 
-void init_openssl(void)
-{
+void init_openssl(void) {
     int i;
 
     // initialize lock array
-    lockarray=(pthread_mutex_t *)OPENSSL_malloc(CRYPTO_num_locks() *
-                                          sizeof(pthread_mutex_t));
+    lockarray = (pthread_mutex_t *) OPENSSL_malloc(
+            CRYPTO_num_locks() * sizeof(pthread_mutex_t));
     for (i=0; i<CRYPTO_num_locks(); i++) {
-        pthread_mutex_init(&(lockarray[i]),NULL);
+        pthread_mutex_init(&(lockarray[i]), nullptr);
     }
 
-    CRYPTO_set_id_callback((unsigned long (*)())thread_id);
-    CRYPTO_set_locking_callback((void (*)(int, int, const char*, int))lock_callback);
+    CRYPTO_set_id_callback((unsigned long (*)()) thread_id);
+    CRYPTO_set_locking_callback(
+            (void (*)(int, int, const char *, int)) lock_callback);
 
     // initialize cipher and digest lookup functions
     OpenSSL_add_all_algorithms();
+
     // initialize the error strings
     ERR_load_crypto_strings();
-
 }
 
-void deinit_openssl(void)
-{
+void deinit_openssl(void) {
     int i;
 
     // free lock array
@@ -81,6 +79,7 @@ void deinit_openssl(void)
 
     // de-initialisation ciphers and digests lookup functions
     EVP_cleanup();
+
     // free all previously loaded error strings
     ERR_free_strings();
 }
