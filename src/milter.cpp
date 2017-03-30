@@ -10,7 +10,7 @@
  * https://www.mirbsd.org/htman/i386/manDOCS/milter/api.html
  *
  * @author Christian Roessner <c@roessner.co>
- * @version 1607.1.3
+ * @version 1607.1.4
  * @date 2016-06-10
  * @copyright Copyright 2016 Christian Roessner <c@roessner.co>
  */
@@ -678,6 +678,7 @@ int main(int argc, const char *argv[]) {
             std::cerr << "Error: Unable to create PID file" << std::endl;
         out.close();
     }
+
     init_openssl();
 
     // Define headers

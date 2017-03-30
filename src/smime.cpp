@@ -3,7 +3,7 @@
  * @brief Handle S/MIME messages
  *
  * @author Christian Roessner <c@roessner.co>
- * @version 1607.1.3
+ * @version 1607.1.4
  * @date 2016-06-10
  * @copyright Copyright 2016 Christian Roessner <c@roessner.co>
  */
@@ -28,8 +28,8 @@
 static pthread_mutex_t *lockarray;
 
 static void lock_callback(int mode, int type, char *file, int line) {
-    (void) file;
-    (void) line;
+    void file;
+    void line;
 
     if (mode & CRYPTO_LOCK) {
         pthread_mutex_lock(&(lockarray[type]));
@@ -71,7 +71,7 @@ void deinit_openssl(void) {
     int i;
 
     // free lock array
-    CRYPTO_set_locking_callback(NULL);
+    CRYPTO_set_locking_callback(nullptr);
     for (i=0; i<CRYPTO_num_locks(); i++)
         pthread_mutex_destroy(&(lockarray[i]));
 

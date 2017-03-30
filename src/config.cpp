@@ -3,7 +3,7 @@
  * @brief Handle a milter configuration file
  *
  * @author Christian Roessner <c@roessner.co>
- * @version 1607.1.3
+ * @version 1607.1.4
  * @date 2016-06-10
  * @copyright Copyright 2016 Christian Roessner <c@roessner.co>
  */
