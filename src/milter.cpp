@@ -58,7 +58,7 @@ static std::vector<std::string> header;
  * @brief Global data structure that maps all callbacks
  */
 static struct smfiDesc smfilter = {
-        util::ccp(miltername.c_str()),  // filter name
+        util::ccp(miltername),  // filter name
         SMFI_VERSION,       // version code -- do not change
         0,                  // flags
         mlfi_connect,       // connection info filter
@@ -477,7 +477,7 @@ sfsistat mlfi_negotiate(
  * \brief Define the milter socket and register the global data structure
  */
 static void initMilter(const std::string &con) {
-    if (smfi_setconn(const_cast<char *> (con.c_str())) == MI_FAILURE) {
+    if (smfi_setconn(util::ccp(con)) == MI_FAILURE) {
         std::cerr << "Error: smfi_setconn() failed" << std::endl;
         exit(EX_UNAVAILABLE);
     }
