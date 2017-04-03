@@ -46,7 +46,7 @@ bool debug = false;
 static std::string miltername("sigh");
 
 //! @brief Version number
-static const std::string version("1607.1.3");
+static const std::string version("1607.1.5");
 
 //! @brief  Configuration options for the milter
 static std::unique_ptr<conf::MilterCfg> config(nullptr);
@@ -127,7 +127,7 @@ sfsistat mlfi_connect(SMFICTX *ctx, char *hostname, struct sockaddr *hostaddr) {
     try {
         client = new mlt::Client(hostname, hostaddr);
     }
-    catch (const std::bad_alloc& ba) {
+    catch (const std::bad_alloc &ba) {
         std::cerr << "Error: bad_alloc caught: " << ba.what() << std::endl;
         return SMFIS_TEMPFAIL;
     }
