@@ -12,6 +12,7 @@
 #define SRC_CLIENT_H_
 
 #include <sys/socket.h>
+#include <netinet/in.h>
 #include <netdb.h>
 
 #include <string>
