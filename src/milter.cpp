@@ -46,7 +46,7 @@ bool debug = false;
 static std::string miltername("sigh");
 
 //! @brief Version number
-static const std::string version("1607.1.5");
+static const std::string version("1607.1.6");
 
 //! @brief  Configuration options for the milter
 static std::unique_ptr<conf::MilterCfg> config(nullptr);
@@ -122,7 +122,7 @@ static struct smfiDesc smfilter = {
 sfsistat mlfi_connect(SMFICTX *ctx, char *hostname, struct sockaddr *hostaddr) {
     assert(ctx != nullptr);
 
-    mlt::Client *client;
+    mlt::Client *client = nullptr;
 
     try {
         client = new mlt::Client(hostname, hostaddr);
@@ -429,16 +429,19 @@ sfsistat mlfi_close(SMFICTX *ctx) {
 
     auto *client = util::mlfipriv(ctx);
 
-    if (::debug) {
-        std::cout << "id=" << client->id
-                  << " disconnect from hostname="
-                  << " socket=" << client->ipAndPort << std::endl;
-    }
-    syslog(LOG_INFO, "id=%ld disconnect from hostname=%s socket=%s",
-           client->id, client->hostname.c_str(), client->ipAndPort.c_str());
+    if (client != nullptr) {
 
-    delete client;
-    smfi_setpriv(ctx, nullptr);
+        if (::debug) {
+            std::cout << "id=" << client->id
+                      << " disconnect from hostname="
+                      << " socket=" << client->ipAndPort << std::endl;
+        }
+        syslog(LOG_INFO, "id=%ld disconnect from hostname=%s socket=%s",
+               client->id, client->hostname.c_str(), client->ipAndPort.c_str());
+
+        delete client;
+        smfi_setpriv(ctx, nullptr);
+    }
 
     return SMFIS_ACCEPT;
 }
