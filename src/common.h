@@ -28,14 +28,14 @@ namespace util {
      * @param x A string literal
      * @return A pointer to char
      */
-    auto ccp = [](const std::string &str) {
+    static auto ccp = [](const std::string &str) {
         return const_cast<char *> (str.c_str());
     };
 
     /*!
      * @brief Data structure for each client connection
      */
-    auto mlfipriv = [](SMFICTX *ctx) {
+    static auto mlfipriv = [](SMFICTX *ctx) {
         return static_cast<mlt::Client *> (smfi_getpriv(ctx));
     };
 }  // namespace util
